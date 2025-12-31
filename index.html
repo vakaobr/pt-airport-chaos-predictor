@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PT Airport Queue Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Crimson+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="grain-overlay"></div>
+    
+    <header class="hero">
+        <div class="container">
+            <h1 class="title">
+                <span class="title-main">Airport Queue</span>
+                <span class="title-sub">Predictor</span>
+            </h1>
+            <p class="subtitle">Real-time crowd forecasting for Portuguese airports based on non-EU flight schedules</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="controls-section">
+            <div class="control-group">
+                <label for="airport">Select Airport</label>
+                <select id="airport" class="input-select">
+                    <option value="">Choose an airport...</option>
+                    <option value="LIS">Lisbon (LIS) - Humberto Delgado</option>
+                    <option value="OPO">Porto (OPO) - Francisco Sá Carneiro</option>
+                    <option value="FAO">Faro (FAO) - Algarve</option>
+                    <option value="FNC">Funchal (FNC) - Madeira</option>
+                    <option value="PDL">Ponta Delgada (PDL) - Azores</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="date">Select Date</label>
+                <input type="date" id="date" class="input-date">
+            </div>
+
+            <button id="predictBtn" class="btn-predict" disabled>
+                <span class="btn-text">Predict Crowds</span>
+                <span class="btn-arrow">→</span>
+            </button>
+        </section>
+
+        <section id="resultsSection" class="results-section hidden">
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <p>Analyzing flight data...</p>
+            </div>
+
+            <div id="results" class="results hidden">
+                <div class="crowd-card">
+                    <div class="crowd-header">
+                        <h2 class="crowd-title">Crowd Level Prediction</h2>
+                        <div id="crowdBadge" class="crowd-badge"></div>
+                    </div>
+                    
+                    <div class="crowd-visual">
+                        <div class="crowd-meter">
+                            <div id="crowdBar" class="crowd-bar"></div>
+                        </div>
+                        <div class="crowd-labels">
+                            <span>Quiet</span>
+                            <span>Moderate</span>
+                            <span>Busy</span>
+                            <span>Very Busy</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Non-EU Arrivals</div>
+                            <div id="arrivals" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Non-EU Departures</div>
+                            <div id="departures" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Passengers</div>
+                            <div id="totalPassengers" class="stat-value">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Peak Period</div>
+                            <div id="peakTime" class="stat-value">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flights-card">
+                    <h3 class="flights-title">Peak Hour Flights</h3>
+                    <div id="flightsList" class="flights-list"></div>
+                </div>
+
+                <div class="info-card">
+                    <h4>💡 Tips for Travelers</h4>
+                    <ul id="travelTips"></ul>
+                </div>
+            </div>
+
+            <div id="error" class="error-message hidden"></div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>Data powered by FlightAware API • Built to help travelers navigate Portuguese airport queues</p>
+            <p class="disclaimer">Predictions are estimates based on scheduled flights. Actual wait times may vary.</p>
+        </div>
+    </footer>
+
+    <script src="/script.js"></script>
+</body>
+</html>

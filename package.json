@@ -1,0 +1,22 @@
+{
+  "name": "pt-airport-queue-predictor",
+  "version": "1.0.0",
+  "description": "Portuguese Airport Queue Predictor using FlightAware API",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "airport",
+    "portugal",
+    "queue",
+    "flightaware",
+    "travel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
