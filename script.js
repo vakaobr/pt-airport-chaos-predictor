@@ -879,7 +879,7 @@ function renderTimetableContent(data, filter = 'all') {
                                     ${aircraft}
                                     <span class="aircraft-tooltip">
                                         ${registration ? `
-                                            <img src="https://api.planespotters.net/pub/photos/500/${registration}" 
+                                            <img src="https://api.planespotters.net/pub/photos/reg/${registration}?size=thumbnail" 
                                                  alt="${registration}" 
                                                  class="aircraft-image"
                                                  onerror="this.onerror=null; this.src='https://images.aviapages.com/aircraft/${aircraftCode.toUpperCase()}.jpg'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex'};"
