@@ -179,28 +179,41 @@ async function fetchFlightAwareData(apiKey, airport, type, startTimestamp, endTi
 // Filter for non-EU flights
 function filterNonEuFlights(flights, type) {
     if (!flights || flights.length === 0) {
+        console.log(`⚠️ No ${type} flights to filter`);
         return [];
     }
 
-    return flights.filter(flight => {
+    console.log(`🔍 Filtering ${flights.length} ${type} flights...`);
+    
+    // Log first flight structure for debugging
+    if (flights[0]) {
+        console.log('📋 Sample flight structure:', JSON.stringify(flights[0], null, 2));
+    }
+
+    const filtered = flights.filter(flight => {
         // Get origin/destination based on type
         const location = type === 'arrival' ? flight.origin : flight.destination;
         
         if (!location) {
+            console.log(`❌ Flight ${flight.ident} has no ${type === 'arrival' ? 'origin' : 'destination'}`);
             return false;
         }
 
         // Check ICAO code
         const icaoCode = location.code_icao || location.code;
         if (!icaoCode) {
+            console.log(`❌ Flight ${flight.ident} has no ICAO code:`, location);
             return false;
         }
         
         // Extract country prefix from ICAO code
         const countryPrefix = icaoCode.substring(0, 2);
+        const isEu = isEuAirport(countryPrefix);
+        
+        console.log(`✈️ ${flight.ident}: ${icaoCode} (${countryPrefix}) → ${isEu ? 'EU (filtered out)' : 'Non-EU (INCLUDED)'}`);
         
         // Check if it's a non-EU country
-        return !isEuAirport(countryPrefix);
+        return !isEu;
     }).map(flight => {
         const scheduledTime = flight.scheduled_out || flight.scheduled_in || flight.scheduled_off || flight.scheduled_on;
         const estimatedTime = flight.estimated_out || flight.estimated_in || flight.estimated_off || flight.estimated_on;
@@ -215,6 +228,9 @@ function filterNonEuFlights(flights, type) {
             type: type
         };
     });
+    
+    console.log(`✅ Filtered ${type}: ${filtered.length} non-EU flights out of ${flights.length} total`);
+    return filtered;
 }
 
 // Check if airport is in EU based on ICAO prefix
