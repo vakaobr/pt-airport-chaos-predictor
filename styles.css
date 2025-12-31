@@ -603,6 +603,21 @@ body {
     color: white;
 }
 
+.country-flag {
+    width: 20px;
+    height: auto;
+    margin-right: 8px;
+    vertical-align: middle;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.route-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .empty-timetable {
     text-align: center;
     padding: 3rem;

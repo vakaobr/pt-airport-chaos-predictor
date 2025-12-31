@@ -472,13 +472,22 @@ function renderTimetableContent(data, filter = 'all') {
                     const route = flight.origin || flight.destination || 'Unknown';
                     const aircraft = flight.aircraftType || 'Unknown';
                     const passengers = flight.estimatedPassengers || '-';
+                    const countryCode = (flight.countryCode || 'un').toLowerCase();
+                    const countryName = flight.countryName || 'Unknown';
                     
                     return `
                         <tr>
                             <td class="flight-time-cell">${timeStr}</td>
                             <td class="flight-number-cell">${flight.flightNumber}</td>
                             <td>${flight.airline}</td>
-                            <td>${route}</td>
+                            <td class="route-cell">
+                                <img src="https://flagcdn.com/w20/${countryCode}.png" 
+                                     alt="${countryName}" 
+                                     title="${countryName}"
+                                     class="country-flag"
+                                     onerror="this.style.display='none'">
+                                <span>${route}</span>
+                            </td>
                             <td>${aircraft}</td>
                             <td><strong>${passengers}</strong></td>
                             <td><span class="flight-badge ${flight.type}">${flight.type}</span></td>
