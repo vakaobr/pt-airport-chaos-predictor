@@ -768,10 +768,12 @@ body {
 }
 
 .aircraft-image {
-    width: 180px;
+    width: 100%;
+    max-width: 240px;
     height: auto;
-    max-height: 90px;
-    object-fit: contain;
+    max-height: 140px;
+    object-fit: cover;
+    object-position: center;
     margin: 0 auto 0.75rem auto;
     border-radius: 8px;
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -1172,10 +1174,12 @@ body {
 }
 
 .aircraft-image {
-    width: 200px !important;
+    width: 100% !important;
+    max-width: 240px !important;
     height: auto !important;
-    max-height: 100px !important;
-    object-fit: contain !important;
+    max-height: 140px !important;
+    object-fit: cover !important;
+    object-position: center !important;
     margin: 0 auto 0.75rem auto !important;
     border-radius: 8px !important;
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
