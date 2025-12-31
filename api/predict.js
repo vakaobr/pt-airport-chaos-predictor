@@ -195,7 +195,21 @@ async function fetchFlightAwareData(apiKey, airport, type, startISO, endISO) {
         allFlights = allFlights.concat(pageFlights);
 
         // Check if there's a next page
-        cursor = data.links?.next ? new URL(data.links.next).searchParams.get('cursor') : null;
+        if (data.links?.next) {
+            try {
+                // Try to parse as URL and extract cursor
+                const nextUrl = data.links.next.startsWith('http') 
+                    ? new URL(data.links.next) 
+                    : new URL(data.links.next, baseUrl);
+                cursor = nextUrl.searchParams.get('cursor');
+            } catch (e) {
+                console.log('⚠️ Could not parse next page URL:', e.message);
+                cursor = null;
+            }
+        } else {
+            cursor = null;
+        }
+        
         pageCount++;
 
         console.log(`📄 Page ${pageCount} complete: ${pageFlights.length} flights. Total so far: ${allFlights.length}. More pages: ${!!cursor}`);
@@ -258,6 +272,11 @@ function filterNonEuFlights(flights, type) {
         const aircraftType = flight.aircraft_type || flight.aircraft?.type || 'Unknown';
         const passengers = estimatePassengersForAircraft(aircraftType);
         
+        // Extract country information from ICAO code
+        const location = type === 'arrival' ? flight.origin : flight.destination;
+        const icaoCode = location?.code_icao || location?.code || '';
+        const countryInfo = getCountryFromICAO(icaoCode);
+        
         return {
             flightNumber: flight.ident || flight.flight_number || 'Unknown',
             airline: flight.operator || flight.operator_iata || 'Unknown',
@@ -267,7 +286,9 @@ function filterNonEuFlights(flights, type) {
             estimatedTime: estimatedTime,
             type: type,
             aircraftType: aircraftType,
-            estimatedPassengers: passengers
+            estimatedPassengers: passengers,
+            countryCode: countryInfo.code,
+            countryName: countryInfo.name
         };
     });
     
@@ -325,6 +346,212 @@ function isEuAirport(prefix) {
     console.log(`🔍 Checking ICAO prefix: ${prefix} → ${euSchengenPrefixes.includes(prefix) ? 'EU/Schengen' : 'NON-EU'}`);
     
     return euSchengenPrefixes.includes(prefix);
+}
+
+// Get country code from ICAO prefix
+function getCountryFromICAO(icaoCode) {
+    if (!icaoCode || icaoCode.length < 2) {
+        return { code: 'UN', name: 'Unknown' };
+    }
+    
+    const prefix = icaoCode.substring(0, 2);
+    
+    // ICAO prefix to ISO country code mapping
+    const icaoToCountry = {
+        // North America
+        'K': { code: 'US', name: 'United States' },
+        'C': { code: 'CA', name: 'Canada' },
+        'MM': { code: 'MX', name: 'Mexico' },
+        
+        // Central America & Caribbean
+        'MU': { code: 'CU', name: 'Cuba' },
+        'MZ': { code: 'BZ', name: 'Belize' },
+        'MN': { code: 'NI', name: 'Nicaragua' },
+        'MR': { code: 'CR', name: 'Costa Rica' },
+        'MP': { code: 'PA', name: 'Panama' },
+        'MY': { code: 'BS', name: 'Bahamas' },
+        'TJ': { code: 'JM', name: 'Jamaica' },
+        'TD': { code: 'DM', name: 'Dominica' },
+        
+        // South America
+        'SB': { code: 'BR', name: 'Brazil' },
+        'SA': { code: 'AR', name: 'Argentina' },
+        'SC': { code: 'CL', name: 'Chile' },
+        'SK': { code: 'CO', name: 'Colombia' },
+        'SE': { code: 'EC', name: 'Ecuador' },
+        'SP': { code: 'PE', name: 'Peru' },
+        'SV': { code: 'VE', name: 'Venezuela' },
+        'SU': { code: 'UY', name: 'Uruguay' },
+        'SG': { code: 'PY', name: 'Paraguay' },
+        'SL': { code: 'BO', name: 'Bolivia' },
+        'SO': { code: 'GF', name: 'French Guiana' },
+        'SM': { code: 'SR', name: 'Suriname' },
+        'SY': { code: 'GY', name: 'Guyana' },
+        
+        // Europe
+        'EB': { code: 'BE', name: 'Belgium' },
+        'ED': { code: 'DE', name: 'Germany' },
+        'EE': { code: 'EE', name: 'Estonia' },
+        'EF': { code: 'FI', name: 'Finland' },
+        'EG': { code: 'GB', name: 'United Kingdom' },
+        'EH': { code: 'NL', name: 'Netherlands' },
+        'EI': { code: 'IE', name: 'Ireland' },
+        'EK': { code: 'DK', name: 'Denmark' },
+        'EL': { code: 'LU', name: 'Luxembourg' },
+        'EN': { code: 'NO', name: 'Norway' },
+        'EP': { code: 'PL', name: 'Poland' },
+        'ES': { code: 'SE', name: 'Sweden' },
+        'ET': { code: 'DE', name: 'Germany' },
+        'EV': { code: 'LV', name: 'Latvia' },
+        'EY': { code: 'LT', name: 'Lithuania' },
+        'LB': { code: 'BG', name: 'Bulgaria' },
+        'LC': { code: 'CY', name: 'Cyprus' },
+        'LD': { code: 'HR', name: 'Croatia' },
+        'LE': { code: 'ES', name: 'Spain' },
+        'LF': { code: 'FR', name: 'France' },
+        'LG': { code: 'GR', name: 'Greece' },
+        'LH': { code: 'HU', name: 'Hungary' },
+        'LI': { code: 'IT', name: 'Italy' },
+        'LJ': { code: 'SI', name: 'Slovenia' },
+        'LK': { code: 'CZ', name: 'Czech Republic' },
+        'LO': { code: 'AT', name: 'Austria' },
+        'LP': { code: 'PT', name: 'Portugal' },
+        'LQ': { code: 'BA', name: 'Bosnia and Herzegovina' },
+        'LR': { code: 'RO', name: 'Romania' },
+        'LS': { code: 'CH', name: 'Switzerland' },
+        'LT': { code: 'TR', name: 'Turkey' },
+        'LU': { code: 'MD', name: 'Moldova' },
+        'LW': { code: 'MK', name: 'North Macedonia' },
+        'LY': { code: 'RS', name: 'Serbia' },
+        'LZ': { code: 'SK', name: 'Slovakia' },
+        'UM': { code: 'BY', name: 'Belarus' },
+        'UU': { code: 'RU', name: 'Russia' },
+        'UK': { code: 'UA', name: 'Ukraine' },
+        
+        // Africa
+        'FN': { code: 'AO', name: 'Angola' },
+        'FZ': { code: 'CD', name: 'DR Congo' },
+        'FB': { code: 'BW', name: 'Botswana' },
+        'FA': { code: 'ZA', name: 'South Africa' },
+        'FM': { code: 'KM', name: 'Comoros' },
+        'FH': { code: 'SH', name: 'Saint Helena' },
+        'FY': { code: 'NA', name: 'Namibia' },
+        'FV': { code: 'ZW', name: 'Zimbabwe' },
+        'FL': { code: 'ZM', name: 'Zambia' },
+        'FX': { code: 'LS', name: 'Lesotho' },
+        'FQ': { code: 'MZ', name: 'Mozambique' },
+        'HE': { code: 'EG', name: 'Egypt' },
+        'HL': { code: 'LY', name: 'Libya' },
+        'DT': { code: 'TN', name: 'Tunisia' },
+        'DA': { code: 'DZ', name: 'Algeria' },
+        'GM': { code: 'MA', name: 'Morocco' },
+        'GO': { code: 'SN', name: 'Senegal' },
+        'GU': { code: 'GN', name: 'Guinea' },
+        'GV': { code: 'CV', name: 'Cape Verde' },
+        'DI': { code: 'CI', name: 'Ivory Coast' },
+        'DN': { code: 'NG', name: 'Nigeria' },
+        'DX': { code: 'TG', name: 'Togo' },
+        'DB': { code: 'BJ', name: 'Benin' },
+        'DR': { code: 'NE', name: 'Niger' },
+        'DF': { code: 'BF', name: 'Burkina Faso' },
+        'GA': { code: 'ML', name: 'Mali' },
+        'GG': { code: 'GW', name: 'Guinea-Bissau' },
+        'GL': { code: 'LR', name: 'Liberia' },
+        'GQ': { code: 'MR', name: 'Mauritania' },
+        'FC': { code: 'CG', name: 'Congo' },
+        'FE': { code: 'CF', name: 'Central African Republic' },
+        'FG': { code: 'GQ', name: 'Equatorial Guinea' },
+        'FO': { code: 'GA', name: 'Gabon' },
+        'FT': { code: 'TD', name: 'Chad' },
+        'FP': { code: 'ST', name: 'São Tomé and Príncipe' },
+        'FK': { code: 'CM', name: 'Cameroon' },
+        'HS': { code: 'SD', name: 'Sudan' },
+        'HK': { code: 'KE', name: 'Kenya' },
+        'HT': { code: 'TZ', name: 'Tanzania' },
+        'HU': { code: 'UG', name: 'Uganda' },
+        'HR': { code: 'RW', name: 'Rwanda' },
+        'HB': { code: 'BI', name: 'Burundi' },
+        'HH': { code: 'ER', name: 'Eritrea' },
+        'HA': { code: 'ET', name: 'Ethiopia' },
+        'HC': { code: 'SO', name: 'Somalia' },
+        'HD': { code: 'DJ', name: 'Djibouti' },
+        'FM': { code: 'MG', name: 'Madagascar' },
+        'FI': { code: 'MU', name: 'Mauritius' },
+        'FJ': { code: 'SC', name: 'Seychelles' },
+        'FW': { code: 'MW', name: 'Malawi' },
+        'FG': { code: 'SZ', name: 'Eswatini' },
+        
+        // Middle East
+        'OE': { code: 'SA', name: 'Saudi Arabia' },
+        'OM': { code: 'AE', name: 'UAE' },
+        'OT': { code: 'QA', name: 'Qatar' },
+        'OB': { code: 'BH', name: 'Bahrain' },
+        'OK': { code: 'KW', name: 'Kuwait' },
+        'OO': { code: 'OM', name: 'Oman' },
+        'OY': { code: 'YE', name: 'Yemen' },
+        'OR': { code: 'IQ', name: 'Iraq' },
+        'OI': { code: 'IR', name: 'Iran' },
+        'OS': { code: 'SY', name: 'Syria' },
+        'OJ': { code: 'JO', name: 'Jordan' },
+        'LL': { code: 'IL', name: 'Israel' },
+        'OL': { code: 'LB', name: 'Lebanon' },
+        
+        // Asia
+        'Z': { code: 'CN', name: 'China' },
+        'RJ': { code: 'JP', name: 'Japan' },
+        'RK': { code: 'KR', name: 'South Korea' },
+        'VT': { code: 'IN', name: 'India' },
+        'OP': { code: 'PK', name: 'Pakistan' },
+        'VN': { code: 'NP', name: 'Nepal' },
+        'VQ': { code: 'BT', name: 'Bhutan' },
+        'VC': { code: 'LK', name: 'Sri Lanka' },
+        'VD': { code: 'KH', name: 'Cambodia' },
+        'VV': { code: 'VN', name: 'Vietnam' },
+        'VL': { code: 'LA', name: 'Laos' },
+        'VY': { code: 'MM', name: 'Myanmar' },
+        'VT': { code: 'TH', name: 'Thailand' },
+        'WB': { code: 'BN', name: 'Brunei' },
+        'WM': { code: 'MY', name: 'Malaysia' },
+        'WS': { code: 'SG', name: 'Singapore' },
+        'WA': { code: 'ID', name: 'Indonesia' },
+        'WI': { code: 'ID', name: 'Indonesia' },
+        'RP': { code: 'PH', name: 'Philippines' },
+        'RC': { code: 'TW', name: 'Taiwan' },
+        'VM': { code: 'MO', name: 'Macau' },
+        'VH': { code: 'HK', name: 'Hong Kong' },
+        'UA': { code: 'KZ', name: 'Kazakhstan' },
+        'UT': { code: 'TJ', name: 'Tajikistan' },
+        'UT': { code: 'UZ', name: 'Uzbekistan' },
+        'UT': { code: 'TM', name: 'Turkmenistan' },
+        'UA': { code: 'KG', name: 'Kyrgyzstan' },
+        'OA': { code: 'AF', name: 'Afghanistan' },
+        'OP': { code: 'BD', name: 'Bangladesh' },
+        
+        // Oceania
+        'Y': { code: 'AU', name: 'Australia' },
+        'NZ': { code: 'NZ', name: 'New Zealand' },
+        'AG': { code: 'SB', name: 'Solomon Islands' },
+        'NF': { code: 'FJ', name: 'Fiji' },
+        'NV': { code: 'VU', name: 'Vanuatu' },
+        'NC': { code: 'NC', name: 'New Caledonia' },
+        'NW': { code: 'WF', name: 'Wallis and Futuna' },
+        'NT': { code: 'PF', name: 'French Polynesia' },
+        'NS': { code: 'WS', name: 'Samoa' },
+        'PT': { code: 'PG', name: 'Papua New Guinea' },
+    };
+    
+    // Try exact match first
+    if (icaoToCountry[prefix]) {
+        return icaoToCountry[prefix];
+    }
+    
+    // Try single letter prefix (for some countries like US, Australia, China)
+    const firstLetter = icaoCode.substring(0, 1);
+    if (icaoToCountry[firstLetter]) {
+        return icaoToCountry[firstLetter];
+    }
+    
+    return { code: 'UN', name: 'Unknown' };
 }
 
 // Estimate passengers based on aircraft type
