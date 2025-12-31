@@ -6,10 +6,228 @@ const EU_COUNTRIES = [
 ];
 
 // Initialize page
+class FrontendCache {
+    constructor(namespace = 'airportQueue') {
+        this.namespace = namespace;
+        this.memoryCache = new Map();
+        this.loadFromLocalStorage();
+    }
+
+    /**
+     * Generate cache key
+     */
+    key(prefix, params) {
+        const sortedParams = Object.keys(params || {})
+            .sort()
+            .map(k => `${k}=${params[k]}`)
+            .join('&');
+        return `${this.namespace}:${prefix}:${sortedParams}`;
+    }
+
+    /**
+     * Get item from cache (memory first, then localStorage)
+     */
+    get(key) {
+        // Check memory cache first
+        if (this.memoryCache.has(key)) {
+            const item = this.memoryCache.get(key);
+            if (this.isValid(item)) {
+                return item.data;
+            }
+            this.memoryCache.delete(key);
+        }
+
+        // Check localStorage
+        try {
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                const item = JSON.parse(stored);
+                if (this.isValid(item)) {
+                    // Restore to memory cache
+                    this.memoryCache.set(key, item);
+                    return item.data;
+                }
+                // Remove expired item
+                localStorage.removeItem(key);
+            }
+        } catch (e) {
+            console.warn('LocalStorage error:', e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Set item in cache (both memory and localStorage)
+     */
+    set(key, data, ttl = 30 * 60 * 1000) {
+        const item = {
+            data,
+            expiry: Date.now() + ttl,
+            timestamp: Date.now()
+        };
+
+        // Store in memory
+        this.memoryCache.set(key, item);
+
+        // Store in localStorage
+        try {
+            localStorage.setItem(key, JSON.stringify(item));
+        } catch (e) {
+            console.warn('LocalStorage full, clearing old entries:', e);
+            this.cleanup();
+            try {
+                localStorage.setItem(key, JSON.stringify(item));
+            } catch (e2) {
+                console.error('Failed to store in localStorage:', e2);
+            }
+        }
+    }
+
+    /**
+     * Check if cached item is still valid
+     */
+    isValid(item) {
+        return item && Date.now() < item.expiry;
+    }
+
+    /**
+     * Clear specific key or all cache
+     */
+    clear(key = null) {
+        if (key) {
+            this.memoryCache.delete(key);
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn('LocalStorage error:', e);
+            }
+        } else {
+            this.memoryCache.clear();
+            this.clearLocalStorage();
+        }
+    }
+
+    /**
+     * Load cache from localStorage to memory
+     */
+    loadFromLocalStorage() {
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        const item = JSON.parse(stored);
+                        if (this.isValid(item)) {
+                            this.memoryCache.set(key, item);
+                        } else {
+                            // Remove expired
+                            localStorage.removeItem(key);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Error loading from localStorage:', e);
+        }
+    }
+
+    /**
+     * Clear all items from localStorage with our namespace
+     */
+    clearLocalStorage() {
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+        } catch (e) {
+            console.warn('Error clearing localStorage:', e);
+        }
+    }
+
+    /**
+     * Remove expired items from localStorage
+     */
+    cleanup() {
+        try {
+            const now = Date.now();
+            const keysToRemove = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        const item = JSON.parse(stored);
+                        if (now >= item.expiry) {
+                            keysToRemove.push(key);
+                            this.memoryCache.delete(key);
+                        }
+                    }
+                }
+            }
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log('Cleaned up', keysToRemove.length, 'expired cache entries');
+        } catch (e) {
+            console.warn('Cleanup error:', e);
+        }
+    }
+
+    /**
+     * Get cache statistics
+     */
+    getStats() {
+        let localStorageCount = 0;
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    localStorageCount++;
+                }
+            }
+        } catch (e) {
+            // Ignore
+        }
+
+        return {
+            memorySize: this.memoryCache.size,
+            localStorageSize: localStorageCount,
+            totalSize: this.memoryCache.size + localStorageCount
+        };
+    }
+}
+
+// Export singleton instance
+const frontendCache = new FrontendCache('airportQueue');
+
+// Cleanup expired entries every 10 minutes
+setInterval(() => {
+    frontendCache.cleanup();
+}, 10 * 60 * 1000);
+
+// Main initialization on page load
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize cache
+    frontendCache.cleanup();
+    console.log('Frontend cache loaded:', frontendCache.getStats());
+    
+    // Initialize UI elements
     const airportSelect = document.getElementById('airport');
     const dateInput = document.getElementById('date');
     const predictBtn = document.getElementById('predictBtn');
+    
+    console.log('✅ DOM elements initialized:', {
+        airportSelect: !!airportSelect,
+        dateInput: !!dateInput,
+        predictBtn: !!predictBtn
+    });
 
     // Set min date to today and max to 2 days from now (FlightAware API limit)
     // According to FlightAware docs: "must be no further than 10 days in the past and 2 days in the future"
@@ -31,13 +249,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle predict button click
     predictBtn.addEventListener('click', async () => {
+        console.log('🔘 Predict button clicked!');
         const airport = airportSelect.value;
         const date = dateInput.value;
         
+        console.log('📍 Selected values:', { airport, date });
+        
         if (airport && date) {
+            console.log('✅ Calling fetchAndDisplayPrediction...');
             await fetchAndDisplayPrediction(airport, date);
+        } else {
+            console.warn('❌ Missing airport or date values');
         }
     });
+    
+    console.log('✅ Predict button event listener attached');
+    
+    // Setup warning banner close button
+    const closeBtn = document.getElementById('closeWarning');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            hideWarningBanner();
+        };
+    }
 });
 
 // Fetch prediction data from API
@@ -716,16 +950,6 @@ function hideWarningBanner() {
     banner.classList.add('hidden');
 }
 
-// Setup warning banner close button
-document.addEventListener('DOMContentLoaded', () => {
-    const closeBtn = document.getElementById('closeWarning');
-    if (closeBtn) {
-        closeBtn.onclick = () => {
-            hideWarningBanner();
-        };
-    }
-});
-
 // Get airline full name from IATA/ICAO code
 function getAirlineName(code) {
     const airlines = {
@@ -853,49 +1077,47 @@ function getAircraftName(code) {
     return aircraft[cleanCode] || cleanCode;
 }
 // Add dynamic tooltip positioning to prevent clipping
-document.addEventListener('DOMContentLoaded', () => {
-    // Position tooltips dynamically when shown
-    document.addEventListener('mouseover', (e) => {
-        const wrapper = e.target.closest('.tooltip-wrapper');
-        if (!wrapper) return;
+// Position tooltips dynamically when shown
+document.addEventListener('mouseover', (e) => {
+    const wrapper = e.target.closest('.tooltip-wrapper');
+    if (!wrapper) return;
+    
+    const tooltip = wrapper.querySelector('.airline-tooltip, .aircraft-tooltip');
+    if (!tooltip) return;
+    
+    // Get wrapper position
+    const rect = wrapper.getBoundingClientRect();
+    
+    // Calculate tooltip position (below the element, centered)
+    const left = rect.left + (rect.width / 2);
+    const top = rect.bottom + 10;
+    
+    // Apply position
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    tooltip.style.transform = 'translateX(-50%)';
+    
+    // Check if tooltip goes off screen and adjust
+    setTimeout(() => {
+        const tooltipRect = tooltip.getBoundingClientRect();
         
-        const tooltip = wrapper.querySelector('.airline-tooltip, .aircraft-tooltip');
-        if (!tooltip) return;
+        // Adjust if goes off right side
+        if (tooltipRect.right > window.innerWidth) {
+            tooltip.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px';
+            tooltip.style.transform = 'none';
+        }
         
-        // Get wrapper position
-        const rect = wrapper.getBoundingClientRect();
+        // Adjust if goes off left side
+        if (tooltipRect.left < 0) {
+            tooltip.style.left = '10px';
+            tooltip.style.transform = 'none';
+        }
         
-        // Calculate tooltip position (below the element, centered)
-        const left = rect.left + (rect.width / 2);
-        const top = rect.bottom + 10;
-        
-        // Apply position
-        tooltip.style.left = left + 'px';
-        tooltip.style.top = top + 'px';
-        tooltip.style.transform = 'translateX(-50%)';
-        
-        // Check if tooltip goes off screen and adjust
-        setTimeout(() => {
-            const tooltipRect = tooltip.getBoundingClientRect();
-            
-            // Adjust if goes off right side
-            if (tooltipRect.right > window.innerWidth) {
-                tooltip.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px';
-                tooltip.style.transform = 'none';
-            }
-            
-            // Adjust if goes off left side
-            if (tooltipRect.left < 0) {
-                tooltip.style.left = '10px';
-                tooltip.style.transform = 'none';
-            }
-            
-            // Show above if goes off bottom
-            if (tooltipRect.bottom > window.innerHeight) {
-                tooltip.style.top = (rect.top - tooltipRect.height - 10) + 'px';
-            }
-        }, 10);
-    });
+        // Show above if goes off bottom
+        if (tooltipRect.bottom > window.innerHeight) {
+            tooltip.style.top = (rect.top - tooltipRect.height - 10) + 'px';
+        }
+    }, 10);
 });
 
 // AviationStack enrichment cache
@@ -998,214 +1220,3 @@ async function showEnrichedTooltip(element, type, code) {
 // Frontend cache manager with LocalStorage persistence
 // Stores API responses locally to minimize network requests
 
-class FrontendCache {
-    constructor(namespace = 'airportQueue') {
-        this.namespace = namespace;
-        this.memoryCache = new Map();
-        this.loadFromLocalStorage();
-    }
-
-    /**
-     * Generate cache key
-     */
-    key(prefix, params) {
-        const sortedParams = Object.keys(params || {})
-            .sort()
-            .map(k => `${k}=${params[k]}`)
-            .join('&');
-        return `${this.namespace}:${prefix}:${sortedParams}`;
-    }
-
-    /**
-     * Get item from cache (memory first, then localStorage)
-     */
-    get(key) {
-        // Check memory cache first
-        if (this.memoryCache.has(key)) {
-            const item = this.memoryCache.get(key);
-            if (this.isValid(item)) {
-                return item.data;
-            }
-            this.memoryCache.delete(key);
-        }
-
-        // Check localStorage
-        try {
-            const stored = localStorage.getItem(key);
-            if (stored) {
-                const item = JSON.parse(stored);
-                if (this.isValid(item)) {
-                    // Restore to memory cache
-                    this.memoryCache.set(key, item);
-                    return item.data;
-                }
-                // Remove expired item
-                localStorage.removeItem(key);
-            }
-        } catch (e) {
-            console.warn('LocalStorage error:', e);
-        }
-
-        return null;
-    }
-
-    /**
-     * Set item in cache (both memory and localStorage)
-     */
-    set(key, data, ttl = 30 * 60 * 1000) {
-        const item = {
-            data,
-            expiry: Date.now() + ttl,
-            timestamp: Date.now()
-        };
-
-        // Store in memory
-        this.memoryCache.set(key, item);
-
-        // Store in localStorage
-        try {
-            localStorage.setItem(key, JSON.stringify(item));
-        } catch (e) {
-            console.warn('LocalStorage full, clearing old entries:', e);
-            this.cleanup();
-            try {
-                localStorage.setItem(key, JSON.stringify(item));
-            } catch (e2) {
-                console.error('Failed to store in localStorage:', e2);
-            }
-        }
-    }
-
-    /**
-     * Check if cached item is still valid
-     */
-    isValid(item) {
-        return item && Date.now() < item.expiry;
-    }
-
-    /**
-     * Clear specific key or all cache
-     */
-    clear(key = null) {
-        if (key) {
-            this.memoryCache.delete(key);
-            try {
-                localStorage.removeItem(key);
-            } catch (e) {
-                console.warn('LocalStorage error:', e);
-            }
-        } else {
-            this.memoryCache.clear();
-            this.clearLocalStorage();
-        }
-    }
-
-    /**
-     * Load cache from localStorage to memory
-     */
-    loadFromLocalStorage() {
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(this.namespace)) {
-                    const stored = localStorage.getItem(key);
-                    if (stored) {
-                        const item = JSON.parse(stored);
-                        if (this.isValid(item)) {
-                            this.memoryCache.set(key, item);
-                        } else {
-                            // Remove expired
-                            localStorage.removeItem(key);
-                        }
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn('Error loading from localStorage:', e);
-        }
-    }
-
-    /**
-     * Clear all items from localStorage with our namespace
-     */
-    clearLocalStorage() {
-        try {
-            const keysToRemove = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(this.namespace)) {
-                    keysToRemove.push(key);
-                }
-            }
-            keysToRemove.forEach(key => localStorage.removeItem(key));
-        } catch (e) {
-            console.warn('Error clearing localStorage:', e);
-        }
-    }
-
-    /**
-     * Remove expired items from localStorage
-     */
-    cleanup() {
-        try {
-            const now = Date.now();
-            const keysToRemove = [];
-            
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(this.namespace)) {
-                    const stored = localStorage.getItem(key);
-                    if (stored) {
-                        const item = JSON.parse(stored);
-                        if (now >= item.expiry) {
-                            keysToRemove.push(key);
-                            this.memoryCache.delete(key);
-                        }
-                    }
-                }
-            }
-            
-            keysToRemove.forEach(key => localStorage.removeItem(key));
-            console.log('Cleaned up', keysToRemove.length, 'expired cache entries');
-        } catch (e) {
-            console.warn('Cleanup error:', e);
-        }
-    }
-
-    /**
-     * Get cache statistics
-     */
-    getStats() {
-        let localStorageCount = 0;
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && key.startsWith(this.namespace)) {
-                    localStorageCount++;
-                }
-            }
-        } catch (e) {
-            // Ignore
-        }
-
-        return {
-            memorySize: this.memoryCache.size,
-            localStorageSize: localStorageCount,
-            totalSize: this.memoryCache.size + localStorageCount
-        };
-    }
-}
-
-// Export singleton instance
-const frontendCache = new FrontendCache('airportQueue');
-
-// Cleanup expired entries every 10 minutes
-setInterval(() => {
-    frontendCache.cleanup();
-}, 10 * 60 * 1000);
-
-// Cleanup on page load
-document.addEventListener('DOMContentLoaded', () => {
-    frontendCache.cleanup();
-    console.log('Frontend cache loaded:', frontendCache.getStats());
-});
