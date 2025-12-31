@@ -91,7 +91,7 @@ function displayResults(data) {
     // Update statistics
     document.getElementById('arrivals').textContent = data.arrivals.length;
     document.getElementById('departures').textContent = data.departures.length;
-    document.getElementById('totalPassengers').textContent = estimatePassengers(data.totalFlights).toLocaleString();
+    document.getElementById('totalPassengers').textContent = (data.totalPassengers || estimatePassengers(data.totalFlights)).toLocaleString();
     document.getElementById('peakTime').textContent = data.peakHour || 'N/A';
 
     // Setup interactive panels
@@ -460,6 +460,8 @@ function renderTimetableContent(data, filter = 'all') {
                     <th>Flight</th>
                     <th>Airline</th>
                     <th>Route</th>
+                    <th>Aircraft</th>
+                    <th>Pax</th>
                     <th>Type</th>
                 </tr>
             </thead>
@@ -468,6 +470,8 @@ function renderTimetableContent(data, filter = 'all') {
                     const time = new Date(flight.scheduledTime || flight.estimatedTime);
                     const timeStr = time.toISOString().substring(11, 16); // HH:MM
                     const route = flight.origin || flight.destination || 'Unknown';
+                    const aircraft = flight.aircraftType || 'Unknown';
+                    const passengers = flight.estimatedPassengers || '-';
                     
                     return `
                         <tr>
@@ -475,6 +479,8 @@ function renderTimetableContent(data, filter = 'all') {
                             <td class="flight-number-cell">${flight.flightNumber}</td>
                             <td>${flight.airline}</td>
                             <td>${route}</td>
+                            <td>${aircraft}</td>
+                            <td><strong>${passengers}</strong></td>
                             <td><span class="flight-badge ${flight.type}">${flight.type}</span></td>
                         </tr>
                     `;

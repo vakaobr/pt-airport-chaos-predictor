@@ -762,12 +762,23 @@ body {
     }
     
     .timetable-table {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
     
     .timetable-table th,
     .timetable-table td {
-        padding: 0.75rem 0.5rem;
+        padding: 0.6rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    
+    .flight-time-cell {
+        font-size: 0.9rem;
+    }
+    
+    /* Hide aircraft column on very small screens */
+    .timetable-table th:nth-child(5),
+    .timetable-table td:nth-child(5) {
+        display: none;
     }
     
     .timetable-tabs {

@@ -223,6 +223,10 @@ function filterNonEuFlights(flights, type) {
         const scheduledTime = flight.scheduled_out || flight.scheduled_in || flight.scheduled_off || flight.scheduled_on;
         const estimatedTime = flight.estimated_out || flight.estimated_in || flight.estimated_off || flight.estimated_on;
         
+        // Extract aircraft information
+        const aircraftType = flight.aircraft_type || flight.aircraft?.type || 'Unknown';
+        const passengers = estimatePassengersForAircraft(aircraftType);
+        
         return {
             flightNumber: flight.ident || flight.flight_number || 'Unknown',
             airline: flight.operator || flight.operator_iata || 'Unknown',
@@ -230,7 +234,9 @@ function filterNonEuFlights(flights, type) {
             destination: type === 'departure' ? (flight.destination?.city || flight.destination?.code || flight.destination?.name) : null,
             scheduledTime: scheduledTime,
             estimatedTime: estimatedTime,
-            type: type
+            type: type,
+            aircraftType: aircraftType,
+            estimatedPassengers: passengers
         };
     });
     
@@ -251,6 +257,73 @@ function isEuAirport(prefix) {
     return euPrefixes.includes(prefix);
 }
 
+// Estimate passengers based on aircraft type
+function estimatePassengersForAircraft(aircraftType) {
+    if (!aircraftType || aircraftType === 'Unknown') {
+        return 180; // Default estimate
+    }
+    
+    // Common aircraft capacity mapping (typical economy configuration)
+    const aircraftCapacities = {
+        // Airbus narrow-body
+        'A318': 132, 'A319': 156, 'A320': 180, 'A321': 220,
+        'A20N': 180, 'A21N': 220, // Neo versions
+        
+        // Airbus wide-body
+        'A330': 290, 'A332': 290, 'A333': 300, 'A338': 260, 'A339': 310,
+        'A350': 325, 'A359': 325, 'A35K': 366,
+        'A380': 555, 'A388': 555,
+        
+        // Boeing narrow-body
+        'B737': 189, 'B738': 189, 'B739': 220, 'B37M': 210,
+        'B38M': 210, 'B39M': 220, // MAX versions
+        'B752': 200, 'B753': 230,
+        
+        // Boeing wide-body
+        'B763': 290, 'B764': 290, 'B772': 305, 'B773': 368, 'B77L': 396,
+        'B77W': 396, 'B788': 242, 'B789': 290, 'B78X': 330,
+        'B747': 416, 'B74S': 416, 'B74R': 416,
+        
+        // Embraer
+        'E190': 114, 'E195': 124, 'E290': 114, 'E295': 146,
+        
+        // Bombardier
+        'CRJ7': 78, 'CRJ9': 90, 'CRJX': 100,
+        
+        // Other regional
+        'AT72': 70, 'AT76': 78, 'DH8D': 78,
+        
+        // Business jets (small capacity)
+        'GLF5': 16, 'GLF6': 19, 'G650': 19, 'PC12': 9
+    };
+    
+    // Try exact match first
+    if (aircraftCapacities[aircraftType]) {
+        return aircraftCapacities[aircraftType];
+    }
+    
+    // Try partial match (e.g., "A320-200" matches "A320")
+    for (const [key, capacity] of Object.entries(aircraftCapacities)) {
+        if (aircraftType.startsWith(key)) {
+            return capacity;
+        }
+    }
+    
+    // Fallback: estimate based on aircraft size indicators
+    if (aircraftType.includes('380')) return 555; // A380
+    if (aircraftType.includes('777') || aircraftType.includes('77')) return 350; // 777
+    if (aircraftType.includes('787') || aircraftType.includes('78')) return 280; // 787
+    if (aircraftType.includes('747')) return 416; // 747
+    if (aircraftType.includes('350')) return 325; // A350
+    if (aircraftType.includes('330')) return 290; // A330
+    if (aircraftType.includes('321') || aircraftType.includes('21')) return 220; // A321
+    if (aircraftType.includes('320') || aircraftType.includes('20')) return 180; // A320
+    if (aircraftType.includes('737') || aircraftType.includes('38')) return 189; // 737
+    
+    // Default fallback
+    return 180;
+}
+
 // Analyze flights and calculate peak times
 function analyzeFlights(arrivals, departures) {
     const allFlights = [...arrivals, ...departures];
@@ -260,11 +333,17 @@ function analyzeFlights(arrivals, departures) {
             arrivals: [],
             departures: [],
             totalFlights: 0,
+            totalPassengers: 0,
             peakHour: 'N/A',
             peakFlights: [],
             flightsByHour: {}
         };
     }
+    
+    // Calculate actual total passengers based on aircraft types
+    const totalPassengers = allFlights.reduce((sum, flight) => {
+        return sum + (flight.estimatedPassengers || 180);
+    }, 0);
     
     // Group by hour
     const flightsByHour = {};
@@ -305,6 +384,7 @@ function analyzeFlights(arrivals, departures) {
         arrivals: arrivals,
         departures: departures,
         totalFlights: allFlights.length,
+        totalPassengers: totalPassengers,
         peakHour: peakHourFormatted,
         peakFlights: peakHour ? flightsByHour[peakHour].slice(0, 10) : [],
         flightsByHour: flightsByHour
