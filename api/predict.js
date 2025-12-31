@@ -47,19 +47,24 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Parse the date - FlightAware expects YYYY-MM-DD format or Unix timestamps
+        // Parse the date - FlightAware expects ISO8601 format without milliseconds
         const targetDate = new Date(date + 'T00:00:00Z');
         
-        // Use Unix timestamps (seconds since epoch) - FlightAware accepts these
-        const startTimestamp = Math.floor(targetDate.getTime() / 1000);
-        const endTimestamp = startTimestamp + (24 * 60 * 60) - 1; // End of day
+        // Create start and end times in ISO8601 format (YYYY-MM-DDTHH:MM:SSZ)
+        const startTime = new Date(targetDate);
+        startTime.setUTCHours(0, 0, 0, 0);
+        
+        const endTime = new Date(targetDate);
+        endTime.setUTCHours(23, 59, 59, 0); // No milliseconds!
+
+        // Format to ISO8601 without milliseconds
+        const startISO = startTime.toISOString().split('.')[0] + 'Z';
+        const endISO = endTime.toISOString().split('.')[0] + 'Z';
 
         console.log('📅 Date range:', { 
             date: date,
-            startTimestamp: startTimestamp,
-            endTimestamp: endTimestamp,
-            startDate: new Date(startTimestamp * 1000).toISOString(),
-            endDate: new Date(endTimestamp * 1000).toISOString()
+            start: startISO,
+            end: endISO
         });
 
         // Fetch arrivals and departures from FlightAware API
@@ -71,8 +76,8 @@ export default async function handler(req, res) {
 
         try {
             [arrivalsData, departuresData] = await Promise.all([
-                fetchFlightAwareData(apiKey, airport, 'arrivals', startTimestamp, endTimestamp),
-                fetchFlightAwareData(apiKey, airport, 'departures', startTimestamp, endTimestamp)
+                fetchFlightAwareData(apiKey, airport, 'arrivals', startISO, endISO),
+                fetchFlightAwareData(apiKey, airport, 'departures', startISO, endISO)
             ]);
         } catch (fetchError) {
             console.error('❌ FlightAware API fetch error:', fetchError.message);
@@ -117,17 +122,17 @@ export default async function handler(req, res) {
 }
 
 // Fetch data from FlightAware API
-async function fetchFlightAwareData(apiKey, airport, type, startTimestamp, endTimestamp) {
+async function fetchFlightAwareData(apiKey, airport, type, startISO, endISO) {
     // FlightAware AeroAPI v4 endpoint - Updated format
     const baseUrl = 'https://aeroapi.flightaware.com/aeroapi';
     const endpoint = type === 'arrivals' 
         ? `${baseUrl}/airports/${airport}/flights/arrivals`
         : `${baseUrl}/airports/${airport}/flights/departures`;
 
-    // Use Unix timestamps (seconds since epoch) - FlightAware prefers this format
+    // Use ISO8601 format without milliseconds (YYYY-MM-DDTHH:MM:SSZ)
     const params = new URLSearchParams({
-        start: startTimestamp.toString(),
-        end: endTimestamp.toString()
+        start: startISO,
+        end: endISO
     });
 
     const url = `${endpoint}?${params}`;
