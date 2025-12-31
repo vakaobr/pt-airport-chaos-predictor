@@ -606,10 +606,7 @@ function renderTimetableContent(data, filter = 'all') {
                                 <span class="tooltip-wrapper" data-tooltip="${aircraftCode}">
                                     ${aircraft}
                                     <span class="aircraft-tooltip">
-                                        <img src="https://content.airhex.com/content/logos/aircraft_${aircraftCode}_350_100_r.png" 
-                                             alt="${aircraftCode}" 
-                                             class="aircraft-image"
-                                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22350%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22350%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2224%22%3E✈ ${aircraftCode}%3C/text%3E%3C/svg%3E'">
+                                        <div class="aircraft-icon">✈️</div>
                                         <span class="aircraft-name">${getAircraftName(aircraftCode)}</span>
                                     </span>
                                 </span>

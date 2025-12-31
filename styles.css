@@ -501,6 +501,9 @@ body {
     box-shadow: var(--shadow-lg);
     margin-bottom: 2rem;
     animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s backwards;
+    overflow: visible;
+    position: relative;
+    z-index: 10;
 }
 
 .timetable-header {
@@ -569,11 +572,14 @@ body {
 .timetable-content {
     max-height: 500px;
     overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
 }
 
 .timetable-table {
     width: 100%;
     border-collapse: collapse;
+    position: relative;
 }
 
 .timetable-table thead {
@@ -640,12 +646,13 @@ body {
 
 .country-flag {
     width: 20px;
-    height: auto;
+    height: 15px;
     margin-right: 8px;
     vertical-align: middle;
     border-radius: 2px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     display: inline-block;
+    flex-shrink: 0;
 }
 
 .route-cell {
@@ -653,6 +660,11 @@ body {
     align-items: center;
     gap: 8px;
     height: 100%;
+}
+
+.route-cell span {
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* Tooltip wrapper */
@@ -678,7 +690,7 @@ body {
     padding: 0.75rem;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 10000;
     width: 180px;
     text-align: center;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -742,7 +754,7 @@ body {
     padding: 0.75rem;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 10000;
     width: 280px;
     text-align: center;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -762,6 +774,12 @@ body {
     object-fit: contain;
     margin-bottom: 0.5rem;
     border-radius: 4px;
+}
+
+.aircraft-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
 }
 
 .aircraft-name {
