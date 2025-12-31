@@ -833,6 +833,9 @@ function renderTimetableContent(data, filter = 'all') {
                     const aircraftCode = aircraft.trim();
                     const registration = flight.aircraftRegistration; // Tail number (e.g., CS-TUA)
                     
+                    // Generate unique ID for this aircraft image
+                    const imageId = `aircraft-img-${registration || aircraftCode}-${Math.random().toString(36).substr(2, 9)}`;
+                    
                     // Debug: Log registration data for first few flights
                     if (Math.random() < 0.2) {
                         console.log('🛩️ Flight registration:', {
@@ -875,23 +878,16 @@ function renderTimetableContent(data, filter = 'all') {
                                 <span>${route}</span>
                             </td>
                             <td>
-                                <span class="tooltip-wrapper" data-tooltip="${aircraftCode}">
+                                <span class="tooltip-wrapper" data-tooltip="${aircraftCode}" ${registration ? `data-registration="${registration}" data-image-id="${imageId}"` : ''}>
                                     ${aircraft}
                                     <span class="aircraft-tooltip">
-                                        ${registration ? `
-                                            <img src="https://api.planespotters.net/pub/photos/reg/${registration}" 
-                                                 alt="${registration}" 
-                                                 class="aircraft-image"
-                                                 onerror="this.onerror=null; this.src='https://images.aviapages.com/aircraft/${aircraftCode.toUpperCase()}.jpg'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex'};"
-                                                 style="display: block;">
-                                        ` : `
-                                            <img src="https://images.aviapages.com/aircraft/${aircraftCode.toUpperCase()}.jpg" 
-                                                 alt="${aircraftCode}" 
-                                                 class="aircraft-image"
-                                                 onerror="this.onerror=null; this.src='https://content.airhex.com/content/logos/aircraft_${aircraftCode}_350_100_r.png'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex'};"
-                                                 style="display: block;">
-                                        `}
-                                        <div class="aircraft-fallback" style="display: none;">
+                                        <img id="${imageId}" 
+                                             src="${registration ? '' : `https://images.aviapages.com/aircraft/${aircraftCode.toUpperCase()}.jpg`}" 
+                                             alt="${registration || aircraftCode}" 
+                                             class="aircraft-image"
+                                             onerror="if(!this.dataset.fallbackAttempted){this.dataset.fallbackAttempted='true'; this.src='https://content.airhex.com/content/logos/aircraft_${aircraftCode}_350_100_r.png'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex'};}"
+                                             style="display: ${registration ? 'none' : 'block'};">
+                                        <div class="aircraft-fallback" style="display: ${registration ? 'flex' : 'none'};">
                                             <svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <!-- Fuselage -->
                                                 <defs>
@@ -973,6 +969,71 @@ function renderTimetableContent(data, filter = 'all') {
     `;
     
     content.innerHTML = table;
+    
+    // Fetch Planespotters photos for aircraft with registration numbers
+    fetchPlanespottersPhotos();
+}
+
+// Fetch aircraft photos from Planespotters API
+async function fetchPlanespottersPhotos() {
+    // Find all tooltip wrappers with registration data
+    const wrappers = document.querySelectorAll('[data-registration]');
+    
+    for (const wrapper of wrappers) {
+        const registration = wrapper.dataset.registration;
+        const imageId = wrapper.dataset.imageId;
+        
+        if (!registration || !imageId) continue;
+        
+        try {
+            const response = await fetch(`https://api.planespotters.net/pub/photos/reg/${registration}`);
+            
+            if (!response.ok) {
+                console.log(`⚠️ Planespotters: No photo for ${registration}`);
+                fallbackToAircraftType(imageId, wrapper);
+                continue;
+            }
+            
+            const data = await response.json();
+            
+            if (data.photos && data.photos.length > 0) {
+                const photo = data.photos[0];
+                const imgElement = document.getElementById(imageId);
+                const fallbackElement = imgElement?.nextElementSibling;
+                
+                // Prefer thumbnail_large, fallback to thumbnail
+                const photoUrl = photo.thumbnail_large?.src || photo.thumbnail?.src;
+                
+                if (photoUrl && imgElement) {
+                    console.log(`✅ Planespotters: Found photo for ${registration}`);
+                    imgElement.src = photoUrl;
+                    imgElement.style.display = 'block';
+                    if (fallbackElement) fallbackElement.style.display = 'none';
+                } else {
+                    fallbackToAircraftType(imageId, wrapper);
+                }
+            } else {
+                fallbackToAircraftType(imageId, wrapper);
+            }
+        } catch (error) {
+            console.error(`❌ Planespotters error for ${registration}:`, error);
+            fallbackToAircraftType(imageId, wrapper);
+        }
+    }
+}
+
+// Fallback to aircraft type image
+function fallbackToAircraftType(imageId, wrapper) {
+    const imgElement = document.getElementById(imageId);
+    const aircraftCode = wrapper.dataset.tooltip;
+    
+    if (imgElement && aircraftCode) {
+        imgElement.src = `https://images.aviapages.com/aircraft/${aircraftCode.toUpperCase()}.jpg`;
+        imgElement.dataset.fallbackAttempted = 'false'; // Reset for error handler
+        imgElement.style.display = 'block';
+        const fallbackElement = imgElement.nextElementSibling;
+        if (fallbackElement) fallbackElement.style.display = 'none';
+    }
 }
 
 // Show warning banner with appropriate message
