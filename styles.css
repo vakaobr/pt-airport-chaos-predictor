@@ -89,6 +89,95 @@ body {
     animation: fadeIn 1s ease-out 0.3s backwards;
 }
 
+/* Context Section */
+.context-section {
+    margin: 2rem 0;
+}
+
+.context-card {
+    background: linear-gradient(135deg, rgba(200, 92, 92, 0.1) 0%, rgba(200, 92, 92, 0.05) 100%);
+    border: 2px solid var(--color-terracotta);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+}
+
+.context-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-terracotta);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.context-text {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--color-dark);
+    margin-bottom: 1.5rem;
+}
+
+.context-links {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.context-links-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-ocean);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.context-news-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.context-news-list li {
+    margin-bottom: 0.75rem;
+}
+
+.context-news-list li:last-child {
+    margin-bottom: 0;
+}
+
+.context-news-list a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: var(--color-ocean);
+    text-decoration: none;
+    font-size: 0.95rem;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.context-news-list a:hover {
+    background: rgba(8, 131, 149, 0.1);
+    color: var(--color-ocean-light);
+    padding-left: 0.75rem;
+}
+
+.external-icon {
+    font-size: 0.85rem;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.context-news-list a:hover .external-icon {
+    opacity: 1;
+}
+
 /* Controls Section */
 .controls-section {
     background: var(--color-white);
