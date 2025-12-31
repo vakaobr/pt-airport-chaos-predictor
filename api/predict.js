@@ -205,17 +205,18 @@ function filterNonEuFlights(flights, type) {
         }
 
         // Check ICAO code
-        const icaoCode = location.code_icao || location.code;
+        const icaoCode = location.code_icao || location.code || location.code_iata;
         if (!icaoCode) {
-            console.log(`❌ Flight ${flight.ident} has no ICAO code:`, location);
+            console.log(`❌ Flight ${flight.ident} has no ICAO code. Location:`, JSON.stringify(location));
             return false;
         }
         
-        // Extract country prefix from ICAO code
+        // Extract country prefix from ICAO code (first 2 letters)
         const countryPrefix = icaoCode.substring(0, 2);
         const isEu = isEuAirport(countryPrefix);
         
-        console.log(`✈️ ${flight.ident}: ${icaoCode} (${countryPrefix}) → ${isEu ? 'EU (filtered out)' : 'Non-EU (INCLUDED)'}`);
+        const locationName = location.city || location.name || location.code || 'Unknown';
+        console.log(`✈️  ${flight.ident} → ${locationName} (${icaoCode}) [${countryPrefix}] = ${isEu ? '🇪🇺 EU (FILTERED OUT)' : '🌍 NON-EU (✅ INCLUDED)'}`);
         
         // Check if it's a non-EU country
         return !isEu;
@@ -244,17 +245,56 @@ function filterNonEuFlights(flights, type) {
     return filtered;
 }
 
-// Check if airport is in EU based on ICAO prefix
+// Check if airport is in EU/Schengen based on ICAO prefix
 function isEuAirport(prefix) {
-    // EU ICAO prefixes
-    const euPrefixes = [
-        'EB', 'ED', 'EE', 'EF', 'EG', 'EH', 'EI', 'EK', 'EL', 'EN',
-        'EP', 'ES', 'ET', 'EV', 'EY', 'LB', 'LC', 'LD', 'LE', 'LF',
-        'LG', 'LH', 'LI', 'LJ', 'LK', 'LO', 'LP', 'LQ', 'LR', 'LS',
-        'LT', 'LU', 'LW', 'LX', 'LY', 'LZ'
+    // EU + Schengen + EFTA ICAO prefixes (comprehensive list)
+    // https://en.wikipedia.org/wiki/List_of_airports_by_ICAO_code
+    const euSchengenPrefixes = [
+        // Western Europe
+        'EB', // Belgium
+        'ED', 'ET', // Germany
+        'EF', // Finland
+        'EG', // UK (not EU but often grouped for travel)
+        'EH', // Netherlands
+        'EI', // Ireland
+        'EK', // Denmark
+        'EL', // Luxembourg
+        'EN', // Norway
+        'EP', // Poland
+        'ES', // Sweden
+        'EV', // Latvia
+        'EY', // Lithuania
+        
+        // Southern Europe
+        'LB', // Bulgaria
+        'LC', // Cyprus
+        'LD', // Croatia
+        'LE', // Spain
+        'LF', // France
+        'LG', // Greece
+        'LH', // Hungary
+        'LI', // Italy
+        'LJ', // Slovenia
+        'LK', // Czech Republic
+        'LO', // Austria
+        'LP', // Portugal
+        'LQ', // Bosnia (not EU but close)
+        'LR', // Romania
+        'LS', // Switzerland
+        'LT', // Turkey (not EU but border country)
+        'LU', // Moldova
+        'LW', // North Macedonia
+        'LX', // Gibraltar
+        'LY', // Serbia, Montenegro
+        'LZ', // Slovakia
+        
+        // Baltic
+        'EE', // Estonia
     ];
     
-    return euPrefixes.includes(prefix);
+    console.log(`🔍 Checking ICAO prefix: ${prefix} → ${euSchengenPrefixes.includes(prefix) ? 'EU/Schengen' : 'NON-EU'}`);
+    
+    return euSchengenPrefixes.includes(prefix);
 }
 
 // Estimate passengers based on aircraft type
