@@ -297,6 +297,16 @@ function filterNonEuFlights(flights, type) {
         const aircraftRegistration = flight.registration || null;  // Tail number (e.g., CS-TUA, N12345)
         const passengers = estimatePassengersForAircraft(aircraftType);
         
+        // Debug: Log what aircraft data we're getting
+        if (flight.ident && Math.random() < 0.1) { // Log 10% of flights to avoid spam
+            console.log('Flight aircraft data sample:', {
+                ident: flight.ident,
+                aircraft_type: flight.aircraft_type,
+                registration: flight.registration,
+                allFlightData: flight
+            });
+        }
+        
         // Extract country information from ICAO code
         const location = type === 'arrival' ? flight.origin : flight.destination;
         const icaoCode = location?.code_icao || location?.code || '';

@@ -833,6 +833,16 @@ function renderTimetableContent(data, filter = 'all') {
                     const aircraftCode = aircraft.trim();
                     const registration = flight.aircraftRegistration; // Tail number (e.g., CS-TUA)
                     
+                    // Debug: Log registration data for first few flights
+                    if (Math.random() < 0.2) {
+                        console.log('🛩️ Flight registration:', {
+                            flight: flight.flightNumber,
+                            type: aircraftCode,
+                            registration: registration,
+                            hasRegistration: !!registration
+                        });
+                    }
+                    
                     return `
                         <tr>
                             <td class="flight-time-cell">${timeStr}</td>
