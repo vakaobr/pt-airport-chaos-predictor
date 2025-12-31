@@ -219,40 +219,74 @@ function displayHourlyChart(flightsByHour) {
 
     // Prepare data for all 24 hours
     const hours = Array.from({ length: 24 }, (_, i) => i);
-    const flightCounts = hours.map(hour => {
+    
+    // Separate arrivals and departures by hour
+    const arrivalCounts = hours.map(hour => {
         const flights = flightsByHour[hour.toString()] || [];
-        return flights.length;
+        return flights.filter(f => f.type === 'arrival').length;
+    });
+    
+    const departureCounts = hours.map(hour => {
+        const flights = flightsByHour[hour.toString()] || [];
+        return flights.filter(f => f.type === 'departure').length;
     });
 
     // Create labels (00:00, 01:00, etc.)
     const labels = hours.map(h => `${h.toString().padStart(2, '0')}:00`);
 
-    // Create gradient for bars
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, '#088395');
-    gradient.addColorStop(1, '#0a4d68');
+    // Create gradients for bars
+    const arrivalGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    arrivalGradient.addColorStop(0, '#088395');
+    arrivalGradient.addColorStop(1, '#0a4d68');
+
+    const departureGradient = ctx.createLinearGradient(0, 0, 0, 300);
+    departureGradient.addColorStop(0, '#c85c5c');
+    departureGradient.addColorStop(1, '#8b7355');
 
     flightsChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
-            datasets: [{
-                label: 'Non-EU Flights',
-                data: flightCounts,
-                backgroundColor: gradient,
-                borderColor: '#0a4d68',
-                borderWidth: 2,
-                borderRadius: 8,
-                hoverBackgroundColor: '#c85c5c',
-                hoverBorderColor: '#c85c5c'
-            }]
+            datasets: [
+                {
+                    label: 'Arrivals',
+                    data: arrivalCounts,
+                    backgroundColor: arrivalGradient,
+                    borderColor: '#0a4d68',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    hoverBackgroundColor: '#088395',
+                },
+                {
+                    label: 'Departures',
+                    data: departureCounts,
+                    backgroundColor: departureGradient,
+                    borderColor: '#8b7355',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    hoverBackgroundColor: '#c85c5c',
+                }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: false
+                    display: true,
+                    position: 'top',
+                    align: 'end',
+                    labels: {
+                        font: {
+                            family: 'Manrope',
+                            size: 12,
+                            weight: '600'
+                        },
+                        color: '#0a4d68',
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 15
+                    }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(10, 77, 104, 0.95)',
@@ -267,43 +301,24 @@ function displayHourlyChart(flightsByHour) {
                     },
                     padding: 12,
                     cornerRadius: 8,
-                    displayColors: false,
+                    displayColors: true,
                     callbacks: {
                         label: function(context) {
                             const count = context.parsed.y;
+                            const label = context.dataset.label;
                             const plural = count === 1 ? 'flight' : 'flights';
-                            return `${count} ${plural}`;
+                            return `${label}: ${count} ${plural}`;
+                        },
+                        afterBody: function(tooltipItems) {
+                            const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+                            return total > 0 ? `\nTotal: ${total} flights` : '';
                         }
                     }
                 }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        font: {
-                            family: 'Manrope',
-                            size: 12
-                        },
-                        color: '#6b6b6b'
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                        drawBorder: false
-                    },
-                    title: {
-                        display: true,
-                        text: 'Number of Flights',
-                        font: {
-                            family: 'Manrope',
-                            size: 13,
-                            weight: '600'
-                        },
-                        color: '#0a4d68'
-                    }
-                },
                 x: {
+                    stacked: true,
                     ticks: {
                         maxRotation: 45,
                         minRotation: 45,
@@ -320,6 +335,32 @@ function displayHourlyChart(flightsByHour) {
                     title: {
                         display: true,
                         text: 'Hour of Day (UTC)',
+                        font: {
+                            family: 'Manrope',
+                            size: 13,
+                            weight: '600'
+                        },
+                        color: '#0a4d68'
+                    }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        font: {
+                            family: 'Manrope',
+                            size: 12
+                        },
+                        color: '#6b6b6b'
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Flights',
                         font: {
                             family: 'Manrope',
                             size: 13,
@@ -347,12 +388,12 @@ function displayHourlyChart(flightsByHour) {
 function setupInteractivePanels() {
     // Arrivals panel click
     document.getElementById('arrivalsPanel').onclick = () => {
-        showTimetable('arrivals', 'Arrivals Timetable');
+        showTimetable('arrivals');
     };
     
     // Departures panel click
     document.getElementById('departuresPanel').onclick = () => {
-        showTimetable('departures', 'Departures Timetable');
+        showTimetable('departures');
     };
     
     // Close timetable button
@@ -382,7 +423,7 @@ function setupInteractivePanels() {
 let currentTimetableData = null;
 
 // Show timetable for specific type
-function showTimetable(type, title) {
+function showTimetable(type) {
     if (!currentFlightData) return;
     
     const flights = type === 'arrivals' 
@@ -391,7 +432,16 @@ function showTimetable(type, title) {
     
     currentTimetableData = { arrivals: currentFlightData.arrivals, departures: currentFlightData.departures };
     
-    document.getElementById('timetableTitle').textContent = title;
+    // Get selected date from the date input
+    const selectedDate = document.getElementById('date').value;
+    const dateObj = new Date(selectedDate);
+    const formattedDate = dateObj.toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+    });
+    
+    document.getElementById('timetableTitle').textContent = `${formattedDate} Timetable`;
     document.getElementById('timetableCard').classList.remove('hidden');
     
     // Set the appropriate tab active
@@ -421,8 +471,17 @@ function showTimetableForHour(hour) {
     
     currentTimetableData = { arrivals, departures };
     
+    // Get selected date from the date input
+    const selectedDate = document.getElementById('date').value;
+    const dateObj = new Date(selectedDate);
+    const formattedDate = dateObj.toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+    });
+    
     const hourLabel = hour.toString().padStart(2, '0') + ':00';
-    document.getElementById('timetableTitle').textContent = `Flights at ${hourLabel} UTC`;
+    document.getElementById('timetableTitle').textContent = `${formattedDate} - ${hourLabel} UTC`;
     document.getElementById('timetableCard').classList.remove('hidden');
     
     // Set "All Flights" tab active
