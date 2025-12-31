@@ -288,7 +288,12 @@ async function fetchAndDisplayPrediction(airport, date) {
     
     if (cachedData) {
         console.log('✅ Using cached prediction data');
+        // Show results section and hide loading/error
+        resultsSection.classList.remove('hidden');
+        loading.classList.add('hidden');
+        error.classList.add('hidden');
         results.classList.remove('hidden');
+        timetableCard.classList.add('hidden');
         displayResults(cachedData);
         return;
     }
