@@ -621,10 +621,10 @@ function renderTimetableContent(data, filter = 'all') {
                                 <span class="tooltip-wrapper" data-tooltip="${aircraftCode}">
                                     ${aircraft}
                                     <span class="aircraft-tooltip">
-                                        <img src="https://cdn.jetphotos.com/400/6/${aircraftCode.toLowerCase()}.jpg" 
+                                        <img src="https://www.airport-data.com/images/aircraft-silhouettes/${aircraftCode}.gif" 
                                              alt="${aircraftCode}" 
                                              class="aircraft-image"
-                                             onerror="this.onerror=null; this.src='https://www.airport-data.com/images/aircraft-silhouettes/${aircraftCode}.gif'; this.onerror=function(){this.src='https://raw.githubusercontent.com/sexym0nk3y/aircraft-silhouettes/master/silhouettes/${aircraftCode}.png'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};};"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                                              style="display: block;">
                                         <div class="aircraft-fallback" style="display: none;">
                                             <svg width="140" height="70" viewBox="0 0 140 70" fill="none" xmlns="http://www.w3.org/2000/svg">

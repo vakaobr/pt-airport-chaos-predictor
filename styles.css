@@ -1187,3 +1187,44 @@ body {
     width: 140px;
     height: 70px;
 }
+
+/* FINAL FIX: Perfect alignment for flag and city name */
+.timetable-table td {
+    padding: 1rem !important;
+    vertical-align: middle !important;
+    line-height: 1.5 !important;
+}
+
+.route-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    min-height: 40px !important;
+}
+
+.country-flag {
+    width: 20px !important;
+    height: 14px !important;
+    flex-shrink: 0 !important;
+    object-fit: cover !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+    display: block !important;
+}
+
+.route-cell > span {
+    line-height: 1.5 !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-block !important;
+}
+
+/* Ensure all cells have same height */
+.timetable-table tbody tr {
+    min-height: 60px;
+}
+
+.timetable-table tbody tr td {
+    height: 100%;
+}
