@@ -2,6 +2,24 @@
 
 This guide explains how to integrate AviationStack API for enriched airline and aircraft data.
 
+## Airline Logos - FREE GitHub Sources
+
+We use **FREE GitHub repositories** as our primary sources for airline logos (no API keys needed):
+
+### Primary Sources (in order):
+1. **sexym0nk3y/airline-logos** - Clean, watermark-free logos
+2. **Jxck-S/airline-logos** - Comprehensive collection
+3. **airframesio/airline-images** - Jack Sweeney's collection
+4. **SVG Fallback** - Beautiful gradient badge with airline code
+
+### Why GitHub over paid APIs?
+✅ **No watermarks** (unlike airhex.com free tier)
+✅ **No API keys required**
+✅ **No rate limits**
+✅ **Always free**
+✅ **High quality PNG images**
+✅ **No authentication errors**
+
 ## What AviationStack Provides
 
 ✅ **Airline Data:**

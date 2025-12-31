@@ -840,10 +840,17 @@ function renderTimetableContent(data, filter = 'all') {
                                 <span class="tooltip-wrapper" data-tooltip="${airlineCode}">
                                     ${airline}
                                     <span class="airline-tooltip">
-                                        <img src="https://content.airhex.com/content/logos/airlines_${airlineCode}_100_100_s.png" 
+                                        <img src="https://raw.githubusercontent.com/sexym0nk3y/airline-logos/master/logos/${airlineCode}.png" 
                                              alt="${airlineCode}" 
                                              class="airline-logo"
-                                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2224%22%3E${airlineCode}%3C/text%3E%3C/svg%3E'">
+                                             onerror="this.onerror=null; 
+                                                      this.src='https://raw.githubusercontent.com/Jxck-S/airline-logos/main/logos/${airlineCode}.png'; 
+                                                      this.onerror=function(){
+                                                          this.src='https://raw.githubusercontent.com/airframesio/airline-images/master/airline_logos/${airlineCode}.png';
+                                                          this.onerror=function(){
+                                                              this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:%23088395%22/%3E%3Cstop offset=%22100%25%22 style=%22stop-color:%230a4d68%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill=%22url(%23g)%22 width=%22120%22 height=%22120%22 rx=%2215%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.35em%22 fill=%22white%22 font-size=%2236%22 font-weight=%22bold%22 font-family=%22Arial,sans-serif%22%3E${airlineCode}%3C/text%3E%3C/svg%3E';
+                                                          };
+                                                      };">
                                         <span class="airline-name">${getAirlineName(airlineCode)}</span>
                                     </span>
                                 </span>
@@ -860,40 +867,54 @@ function renderTimetableContent(data, filter = 'all') {
                                 <span class="tooltip-wrapper" data-tooltip="${aircraftCode}">
                                     ${aircraft}
                                     <span class="aircraft-tooltip">
-                                        <img src="https://www.airport-data.com/images/aircraft-silhouettes/${aircraftCode}.gif" 
+                                        <img src="https://cdn.jetphotos.com/400/6/${aircraftCode.toLowerCase()}-001.jpg" 
                                              alt="${aircraftCode}" 
                                              class="aircraft-image"
-                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                             onerror="this.onerror=null; 
+                                                      this.src='https://www.norebbo.com/img/aircraft/${aircraftCode}.jpg'; 
+                                                      this.onerror=function(){
+                                                          this.style.display='none'; 
+                                                          this.nextElementSibling.style.display='flex';
+                                                      };"
                                              style="display: block;">
                                         <div class="aircraft-fallback" style="display: none;">
-                                            <svg width="140" height="70" viewBox="0 0 140 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <!-- Fuselage -->
-                                                <ellipse cx="70" cy="35" rx="50" ry="12" fill="#088395" opacity="0.2"/>
-                                                <rect x="30" y="28" width="80" height="14" rx="7" fill="#088395"/>
+                                                <defs>
+                                                    <linearGradient id="fuselageGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" style="stop-color:#088395;stop-opacity:0.3" />
+                                                        <stop offset="50%" style="stop-color:#088395;stop-opacity:0.5" />
+                                                        <stop offset="100%" style="stop-color:#088395;stop-opacity:0.3" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <ellipse cx="90" cy="45" rx="60" ry="14" fill="url(#fuselageGrad)"/>
+                                                <rect x="40" y="36" width="100" height="18" rx="9" fill="#088395"/>
                                                 
                                                 <!-- Wings -->
-                                                <path d="M45 35 L10 25 L10 30 L45 40 Z" fill="#0a4d68" opacity="0.8"/>
-                                                <path d="M95 35 L130 25 L130 30 L95 40 Z" fill="#0a4d68" opacity="0.8"/>
+                                                <path d="M55 45 L15 33 L15 39 L55 51 Z" fill="#0a4d68" opacity="0.8"/>
+                                                <path d="M125 45 L165 33 L165 39 L125 51 Z" fill="#0a4d68" opacity="0.8"/>
                                                 
                                                 <!-- Tail -->
-                                                <path d="M105 28 L115 15 L118 28 Z" fill="#088395"/>
-                                                <path d="M108 35 L120 35 L120 40 L108 40 Z" fill="#0a4d68" opacity="0.6"/>
+                                                <path d="M133 36 L145 18 L150 36 Z" fill="#088395"/>
+                                                <path d="M136 45 L152 45 L152 51 L136 51 Z" fill="#0a4d68" opacity="0.6"/>
                                                 
-                                                <!-- Cockpit -->
-                                                <circle cx="32" cy="35" r="6" fill="#c85c5c" opacity="0.3"/>
+                                                <!-- Cockpit window -->
+                                                <circle cx="42" cy="45" r="7" fill="#c85c5c" opacity="0.3"/>
+                                                <circle cx="42" cy="45" r="4" fill="white" opacity="0.6"/>
                                                 
                                                 <!-- Engine details -->
-                                                <ellipse cx="55" cy="42" rx="8" ry="5" fill="#6b6b6b" opacity="0.4"/>
-                                                <ellipse cx="85" cy="42" rx="8" ry="5" fill="#6b6b6b" opacity="0.4"/>
+                                                <ellipse cx="70" cy="54" rx="10" ry="6" fill="#6b6b6b" opacity="0.4"/>
+                                                <ellipse cx="110" cy="54" rx="10" ry="6" fill="#6b6b6b" opacity="0.4"/>
                                                 
-                                                <!-- Windows -->
-                                                <circle cx="45" cy="32" r="1.5" fill="white" opacity="0.6"/>
-                                                <circle cx="52" cy="32" r="1.5" fill="white" opacity="0.6"/>
-                                                <circle cx="59" cy="32" r="1.5" fill="white" opacity="0.6"/>
-                                                <circle cx="66" cy="32" r="1.5" fill="white" opacity="0.6"/>
-                                                <circle cx="73" cy="32" r="1.5" fill="white" opacity="0.6"/>
-                                                <circle cx="80" cy="32" r="1.5" fill="white" opacity="0.6"/>
-                                                <circle cx="87" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                                <!-- Passenger windows -->
+                                                <circle cx="58" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="68" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="78" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="88" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="98" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="108" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="118" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="128" cy="41" r="2" fill="white" opacity="0.6"/>
                                             </svg>
                                         </div>
                                         <span class="aircraft-name">${getAircraftName(aircraftCode)}</span>
