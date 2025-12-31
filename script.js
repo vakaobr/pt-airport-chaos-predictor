@@ -574,12 +574,26 @@ function renderTimetableContent(data, filter = 'all') {
                     const passengers = flight.estimatedPassengers || '-';
                     const countryCode = (flight.countryCode || 'un').toLowerCase();
                     const countryName = flight.countryName || 'Unknown';
+                    const airline = flight.airline || 'Unknown';
+                    const airlineCode = airline.trim();
+                    const aircraftCode = aircraft.trim();
                     
                     return `
                         <tr>
                             <td class="flight-time-cell">${timeStr}</td>
                             <td class="flight-number-cell">${flight.flightNumber}</td>
-                            <td>${flight.airline}</td>
+                            <td>
+                                <span class="tooltip-wrapper" data-tooltip="${airlineCode}">
+                                    ${airline}
+                                    <span class="airline-tooltip">
+                                        <img src="https://content.airhex.com/content/logos/airlines_${airlineCode}_100_100_s.png" 
+                                             alt="${airlineCode}" 
+                                             class="airline-logo"
+                                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2224%22%3E${airlineCode}%3C/text%3E%3C/svg%3E'">
+                                        <span class="airline-name">${getAirlineName(airlineCode)}</span>
+                                    </span>
+                                </span>
+                            </td>
                             <td class="route-cell">
                                 <img src="https://flagcdn.com/w20/${countryCode}.png" 
                                      alt="${countryName}" 
@@ -588,7 +602,18 @@ function renderTimetableContent(data, filter = 'all') {
                                      onerror="this.style.display='none'">
                                 <span>${route}</span>
                             </td>
-                            <td>${aircraft}</td>
+                            <td>
+                                <span class="tooltip-wrapper" data-tooltip="${aircraftCode}">
+                                    ${aircraft}
+                                    <span class="aircraft-tooltip">
+                                        <img src="https://content.airhex.com/content/logos/aircraft_${aircraftCode}_350_100_r.png" 
+                                             alt="${aircraftCode}" 
+                                             class="aircraft-image"
+                                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22350%22 height=%22100%22%3E%3Crect fill=%22%23ddd%22 width=%22350%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2224%22%3E✈ ${aircraftCode}%3C/text%3E%3C/svg%3E'">
+                                        <span class="aircraft-name">${getAircraftName(aircraftCode)}</span>
+                                    </span>
+                                </span>
+                            </td>
                             <td><strong>${passengers}</strong></td>
                             <td><span class="flight-badge ${flight.type}">${flight.type}</span></td>
                         </tr>
@@ -653,3 +678,112 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 });
+
+// Get airline full name from IATA/ICAO code
+function getAirlineName(code) {
+    const airlines = {
+        'TAP': 'TAP Air Portugal',
+        'TP': 'TAP Air Portugal',
+        'UAL': 'United Airlines',
+        'UA': 'United Airlines',
+        'TAM': 'LATAM Brasil',
+        'JJ': 'LATAM Brasil',
+        'ETD': 'Etihad Airways',
+        'EY': 'Etihad Airways',
+        'BAW': 'British Airways',
+        'BA': 'British Airways',
+        'RYR': 'Ryanair',
+        'FR': 'Ryanair',
+        'IBE': 'Iberia',
+        'IB': 'Iberia',
+        'AFR': 'Air France',
+        'AF': 'Air France',
+        'DLH': 'Lufthansa',
+        'LH': 'Lufthansa',
+        'KLM': 'KLM Royal Dutch Airlines',
+        'KL': 'KLM Royal Dutch Airlines',
+        'EZY': 'easyJet',
+        'U2': 'easyJet',
+        'EIN': 'Aer Lingus',
+        'EI': 'Aer Lingus',
+        'SWR': 'Swiss International Air Lines',
+        'LX': 'Swiss International Air Lines',
+        'AUA': 'Austrian Airlines',
+        'OS': 'Austrian Airlines',
+        'SAS': 'Scandinavian Airlines',
+        'SK': 'Scandinavian Airlines',
+        'FIN': 'Finnair',
+        'AY': 'Finnair',
+        'AAL': 'American Airlines',
+        'AA': 'American Airlines',
+        'DAL': 'Delta Air Lines',
+        'DL': 'Delta Air Lines',
+        'UAE': 'Emirates',
+        'EK': 'Emirates',
+        'QTR': 'Qatar Airways',
+        'QR': 'Qatar Airways',
+        'THY': 'Turkish Airlines',
+        'TK': 'Turkish Airlines',
+        'AZA': 'Alitalia',
+        'AZ': 'Alitalia',
+        'ITA': 'ITA Airways',
+        'AZ': 'ITA Airways'
+    };
+    
+    return airlines[code] || code;
+}
+
+// Get aircraft full name from type code
+function getAircraftName(code) {
+    const aircraft = {
+        'A20N': 'Airbus A320neo',
+        'A21N': 'Airbus A321neo',
+        'A318': 'Airbus A318',
+        'A319': 'Airbus A319',
+        'A320': 'Airbus A320',
+        'A321': 'Airbus A321',
+        'A332': 'Airbus A330-200',
+        'A333': 'Airbus A330-300',
+        'A338': 'Airbus A330-800neo',
+        'A339': 'Airbus A330-900neo',
+        'A359': 'Airbus A350-900',
+        'A35K': 'Airbus A350-1000',
+        'A380': 'Airbus A380',
+        'A388': 'Airbus A380-800',
+        'B737': 'Boeing 737',
+        'B738': 'Boeing 737-800',
+        'B739': 'Boeing 737-900',
+        'B37M': 'Boeing 737 MAX 7',
+        'B38M': 'Boeing 737 MAX 8',
+        'B39M': 'Boeing 737 MAX 9',
+        'B3JM': 'Boeing 737 MAX 10',
+        'B752': 'Boeing 757-200',
+        'B753': 'Boeing 757-300',
+        'B762': 'Boeing 767-200',
+        'B763': 'Boeing 767-300',
+        'B764': 'Boeing 767-400',
+        'B772': 'Boeing 777-200',
+        'B773': 'Boeing 777-300',
+        'B77L': 'Boeing 777-200LR',
+        'B77W': 'Boeing 777-300ER',
+        'B788': 'Boeing 787-8 Dreamliner',
+        'B789': 'Boeing 787-9 Dreamliner',
+        'B78X': 'Boeing 787-10 Dreamliner',
+        'B747': 'Boeing 747',
+        'B74S': 'Boeing 747-8',
+        'E190': 'Embraer E190',
+        'E195': 'Embraer E195',
+        'E290': 'Embraer E190-E2',
+        'E295': 'Embraer E195-E2',
+        'AT72': 'ATR 72',
+        'AT76': 'ATR 72-600',
+        'DH8D': 'Bombardier Dash 8-Q400',
+        'CRJ7': 'Bombardier CRJ-700',
+        'CRJ9': 'Bombardier CRJ-900',
+        'CRJX': 'Bombardier CRJ-1000'
+    };
+    
+    // Remove trailing spaces
+    const cleanCode = code.trim();
+    return aircraft[cleanCode] || cleanCode;
+}
