@@ -931,34 +931,6 @@ function renderTimetableContent(data, filter = 'all') {
                                     </span>
                                 </span>
                             </td>
-                                                
-                                                <!-- Tail -->
-                                                <path d="M133 36 L145 18 L150 36 Z" fill="#088395"/>
-                                                <path d="M136 45 L152 45 L152 51 L136 51 Z" fill="#0a4d68" opacity="0.6"/>
-                                                
-                                                <!-- Cockpit window -->
-                                                <circle cx="42" cy="45" r="7" fill="#c85c5c" opacity="0.3"/>
-                                                <circle cx="42" cy="45" r="4" fill="white" opacity="0.6"/>
-                                                
-                                                <!-- Engine details -->
-                                                <ellipse cx="70" cy="54" rx="10" ry="6" fill="#6b6b6b" opacity="0.4"/>
-                                                <ellipse cx="110" cy="54" rx="10" ry="6" fill="#6b6b6b" opacity="0.4"/>
-                                                
-                                                <!-- Passenger windows -->
-                                                <circle cx="58" cy="41" r="2" fill="white" opacity="0.6"/>
-                                                <circle cx="68" cy="41" r="2" fill="white" opacity="0.6"/>
-                                                <circle cx="78" cy="41" r="2" fill="white" opacity="0.6"/>
-                                                <circle cx="88" cy="41" r="2" fill="white" opacity="0.6"/>
-                                                <circle cx="98" cy="41" r="2" fill="white" opacity="0.6"/>
-                                                <circle cx="108" cy="41" r="2" fill="white" opacity="0.6"/>
-                                                <circle cx="118" cy="41" r="2" fill="white" opacity="0.6"/>
-                                                <circle cx="128" cy="41" r="2" fill="white" opacity="0.6"/>
-                                            </svg>
-                                        </div>
-                                        <span class="aircraft-name">${getAircraftName(aircraftCode)}</span>
-                                    </span>
-                                </span>
-                            </td>
                             <td><strong>${passengers}</strong></td>
                             <td><span class="flight-badge ${flight.type}">${flight.type}</span></td>
                         </tr>
@@ -1000,15 +972,27 @@ async function fetchPlanespottersPhotos() {
                 const photo = data.photos[0];
                 const imgElement = document.getElementById(imageId);
                 const fallbackElement = imgElement?.nextElementSibling;
+                const aircraftNameElement = fallbackElement?.nextElementSibling;
                 
                 // Prefer thumbnail_large, fallback to thumbnail
                 const photoUrl = photo.thumbnail_large?.src || photo.thumbnail?.src;
+                const photographer = photo.photographer || null;
                 
                 if (photoUrl && imgElement) {
-                    console.log(`✅ Planespotters: Found photo for ${registration}`);
+                    console.log(`✅ Planespotters: Found photo for ${registration} by ${photographer || 'Unknown'}`);
                     imgElement.src = photoUrl;
                     imgElement.style.display = 'block';
                     if (fallbackElement) fallbackElement.style.display = 'none';
+                    
+                    // Add photographer credit to aircraft name
+                    if (aircraftNameElement && photographer) {
+                        const currentText = aircraftNameElement.textContent;
+                        const photographerCredit = document.createElement('div');
+                        photographerCredit.className = 'photographer-credit';
+                        photographerCredit.textContent = `Photo by: ${photographer}`;
+                        aircraftNameElement.innerHTML = currentText;
+                        aircraftNameElement.appendChild(photographerCredit);
+                    }
                 } else {
                     fallbackToAircraftType(imageId, wrapper);
                 }
