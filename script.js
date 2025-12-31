@@ -92,6 +92,13 @@ function displayResults(data) {
     // Store data globally for interactive features
     currentFlightData = data;
     
+    // Check for warnings or errors in the response
+    if (data.warning || data.apiError) {
+        showWarningBanner(data.warning, data.apiError);
+    } else {
+        hideWarningBanner();
+    }
+    
     // Update crowd level badge and meter
     const crowdLevel = calculateCrowdLevel(data.totalFlights);
     updateCrowdDisplay(crowdLevel, data.totalFlights);
@@ -567,3 +574,56 @@ function renderTimetableContent(data, filter = 'all') {
     
     content.innerHTML = table;
 }
+
+// Show warning banner with appropriate message
+function showWarningBanner(warning, apiError) {
+    const banner = document.getElementById('warningBanner');
+    const title = document.getElementById('warningTitle');
+    const message = document.getElementById('warningMessage');
+    
+    // Determine the warning message
+    let warningTitle = 'Notice';
+    let warningMessage = '';
+    
+    if (apiError) {
+        if (apiError.includes('Rate limit') || apiError.includes('429')) {
+            warningTitle = 'Rate Limit Reached';
+            warningMessage = '⏱️ The FlightAware API rate limit has been exceeded. The data shown may be incomplete or from cache. Please try again in a few minutes, or results may be limited to cached data.';
+        } else if (apiError.includes('Invalid start bound') || apiError.includes('time is too far')) {
+            warningTitle = 'Date Not Available';
+            warningMessage = '📅 Flight data is only available for today and the next 2-3 days with the free API tier. Please select a closer date.';
+        } else if (apiError.includes('401') || apiError.includes('Invalid API key')) {
+            warningTitle = 'API Configuration Issue';
+            warningMessage = '🔑 There is an issue with the API key configuration. Please contact the administrator.';
+        } else if (apiError.includes('404') || apiError.includes('not found')) {
+            warningTitle = 'No Data Available';
+            warningMessage = '🔍 No flight data is available for this airport and date. This could be due to API limitations or the selected date being outside the available range.';
+        } else {
+            warningTitle = 'API Error';
+            warningMessage = `⚠️ ${apiError.substring(0, 150)}${apiError.length > 150 ? '...' : ''}`;
+        }
+    } else if (warning) {
+        warningTitle = 'Limited Data';
+        warningMessage = warning;
+    }
+    
+    title.textContent = warningTitle;
+    message.textContent = warningMessage;
+    banner.classList.remove('hidden');
+}
+
+// Hide warning banner
+function hideWarningBanner() {
+    const banner = document.getElementById('warningBanner');
+    banner.classList.add('hidden');
+}
+
+// Setup warning banner close button
+document.addEventListener('DOMContentLoaded', () => {
+    const closeBtn = document.getElementById('closeWarning');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            hideWarningBanner();
+        };
+    }
+});
