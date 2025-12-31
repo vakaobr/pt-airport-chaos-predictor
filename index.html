@@ -77,11 +77,11 @@
                     </div>
 
                     <div class="stats-grid">
-                        <div class="stat-item clickable" id="arrivalsPanel" data-type="arrivals">
+                        <div class="stat-item clickable" id="arrivalsPanel" data-type="arrivals" title="Click to view arrivals timetable">
                             <div class="stat-label">Non-EU Arrivals</div>
                             <div id="arrivals" class="stat-value">-</div>
                         </div>
-                        <div class="stat-item clickable" id="departuresPanel" data-type="departures">
+                        <div class="stat-item clickable" id="departuresPanel" data-type="departures" title="Click to view departures timetable">
                             <div class="stat-label">Non-EU Departures</div>
                             <div id="departures" class="stat-value">-</div>
                         </div>
@@ -97,7 +97,10 @@
                 </div>
 
                 <div class="chart-card">
-                    <h3 class="chart-title">Hourly Flight Distribution</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="chart-title" style="margin-bottom: 0;">Hourly Flight Distribution</h3>
+                        <small style="color: var(--color-gray); font-style: italic;">💡 Click a bar to see flights</small>
+                    </div>
                     <div class="chart-container">
                         <canvas id="flightsChart"></canvas>
                     </div>
