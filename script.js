@@ -460,28 +460,44 @@ function displayTravelTips(level) {
             'Great time to travel! Expect minimal queues',
             'Arrive 90 minutes before departure for international flights',
             'Use automated passport gates if eligible',
-            'Consider arriving slightly earlier on weekends'
+            'Consider arriving slightly earlier on weekends',
+            'Perfect conditions for a stress-free journey'
         ],
         'medium': [
             'Moderate crowds expected',
             'Arrive 2 hours before departure',
             'Have documents ready before reaching passport control',
-            'Check online check-in options to save time'
+            'Check online check-in options to save time',
+            'Consider bringing a water bottle to stay hydrated',
+            '📱 Download airport wifi info in case of delays'
         ],
         'high': [
-            'Busy period - expect longer queues',
+            'Busy period - expect longer queues (30-60 min waits)',
             'Arrive at least 2.5 hours before departure',
+            '⚡ Bring a powerbank - charging stations may be crowded',
+            '🪑 Consider a portable folding stool for queue comfort',
+            '🥤 Pack snacks and water for potential long waits',
+            '📱 Connect to airport wifi to stay updated on flight status',
             'Consider fast-track services if available',
             'Prepare all documents in advance',
-            'Stay hydrated and patient during peak times'
+            'Wear comfortable shoes for extended standing'
         ],
         'very-high': [
-            'Very busy period - significant delays possible',
+            '🚨 Very busy period - expect 1-2+ hour waits',
             'Arrive 3+ hours before international flights',
+            '🪑 STRONGLY RECOMMENDED: Bring a portable stool or cushion',
+            '⚡ Powerbank is ESSENTIAL - long waits drain batteries',
+            '🍫 Pack substantial snacks (granola bars, sandwiches, fruit)',
+            '💧 Bring a refillable water bottle (fill after security)',
+            '📱 Download movies/books/podcasts for offline entertainment',
+            '📶 Airport wifi: Connect early to stay informed',
+            '💊 Bring any necessary medications in carry-on',
+            '📋 Have passport, boarding pass, and documents easily accessible',
+            '👟 Wear your most comfortable shoes',
+            '🧘 Consider meditation apps to stay calm',
             'Strongly consider fast-track or premium services',
-            'Have passport and boarding pass ready at all times',
-            'Check flight status regularly for updates',
-            'Pack snacks and water for potential long waits'
+            'Check flight status every 30 minutes',
+            '⏰ Given recent chaos, budget even MORE time than suggested'
         ]
     };
 
