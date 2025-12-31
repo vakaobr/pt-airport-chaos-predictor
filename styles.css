@@ -98,7 +98,7 @@ body {
     margin: 3rem 0;
     display: grid;
     grid-template-columns: 1fr 1fr auto;
-    gap: 1.5rem;
+    gap: 2rem;
     align-items: end;
     animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
     border: 3px solid var(--color-ocean);
@@ -110,12 +110,24 @@ body {
     gap: 0.75rem;
 }
 
+.control-group.button-group {
+    align-self: end;
+}
+
 .control-group label {
     font-weight: 600;
     color: var(--color-ocean);
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+.helper-text {
+    color: var(--color-gray);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: block;
+    font-style: italic;
 }
 
 .input-select,
