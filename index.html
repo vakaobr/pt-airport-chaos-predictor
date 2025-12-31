@@ -35,6 +35,7 @@
                     <option value="FNC">Funchal (FNC) - Madeira</option>
                     <option value="PDL">Ponta Delgada (PDL) - Azores</option>
                 </select>
+                <small class="helper-text" style="visibility: hidden;">Placeholder</small>
             </div>
 
             <div class="control-group">
@@ -44,6 +45,7 @@
             </div>
 
             <div class="control-group button-group">
+                <label style="visibility: hidden;">Action</label>
                 <button id="predictBtn" class="btn-predict" disabled>
                     <span class="btn-text">Predict Crowds</span>
                     <span class="btn-arrow">→</span>
@@ -58,6 +60,15 @@
             </div>
 
             <div id="results" class="results hidden">
+                <div id="warningBanner" class="warning-banner hidden">
+                    <div class="warning-icon">⚠️</div>
+                    <div class="warning-content">
+                        <strong class="warning-title" id="warningTitle">Notice</strong>
+                        <p class="warning-message" id="warningMessage"></p>
+                    </div>
+                    <button class="warning-close" id="closeWarning" aria-label="Close warning">×</button>
+                </div>
+
                 <div class="crowd-card">
                     <div class="crowd-header">
                         <h2 class="crowd-title">Crowd Level Prediction</h2>
