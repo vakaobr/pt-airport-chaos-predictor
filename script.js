@@ -87,6 +87,9 @@ function displayResults(data) {
     document.getElementById('totalPassengers').textContent = estimatePassengers(data.totalFlights).toLocaleString();
     document.getElementById('peakTime').textContent = data.peakHour || 'N/A';
 
+    // Display hourly chart
+    displayHourlyChart(data.flightsByHour);
+
     // Display peak hour flights
     displayFlights(data.peakFlights);
 
@@ -184,4 +187,137 @@ function displayTravelTips(level) {
 function estimatePassengers(totalFlights) {
     // Assume average of 180 passengers per flight (mix of short and long haul)
     return Math.round(totalFlights * 180);
+}
+
+// Global variable to store chart instance
+let flightsChart = null;
+
+// Display hourly chart
+function displayHourlyChart(flightsByHour) {
+    const canvas = document.getElementById('flightsChart');
+    const ctx = canvas.getContext('2d');
+
+    // Destroy existing chart if it exists
+    if (flightsChart) {
+        flightsChart.destroy();
+    }
+
+    // Prepare data for all 24 hours
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const flightCounts = hours.map(hour => {
+        const flights = flightsByHour[hour.toString()] || [];
+        return flights.length;
+    });
+
+    // Create labels (00:00, 01:00, etc.)
+    const labels = hours.map(h => `${h.toString().padStart(2, '0')}:00`);
+
+    // Create gradient for bars
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, '#088395');
+    gradient.addColorStop(1, '#0a4d68');
+
+    flightsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Non-EU Flights',
+                data: flightCounts,
+                backgroundColor: gradient,
+                borderColor: '#0a4d68',
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: '#c85c5c',
+                hoverBorderColor: '#c85c5c'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(10, 77, 104, 0.95)',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold',
+                        family: 'Manrope'
+                    },
+                    bodyFont: {
+                        size: 13,
+                        family: 'Manrope'
+                    },
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            const count = context.parsed.y;
+                            const plural = count === 1 ? 'flight' : 'flights';
+                            return `${count} ${plural}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        font: {
+                            family: 'Manrope',
+                            size: 12
+                        },
+                        color: '#6b6b6b'
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Flights',
+                        font: {
+                            family: 'Manrope',
+                            size: 13,
+                            weight: '600'
+                        },
+                        color: '#0a4d68'
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        font: {
+                            family: 'Manrope',
+                            size: 11
+                        },
+                        color: '#6b6b6b'
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Hour of Day (UTC)',
+                        font: {
+                            family: 'Manrope',
+                            size: 13,
+                            weight: '600'
+                        },
+                        color: '#0a4d68'
+                    }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
 }

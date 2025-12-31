@@ -338,6 +338,29 @@ body {
 }
 
 /* Flights Card */
+.chart-card {
+    background: var(--color-white);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 2rem;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s backwards;
+}
+
+.chart-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.75rem;
+    color: var(--color-ocean);
+    margin-bottom: 1.5rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Flights Card */
 .flights-card {
     background: var(--color-white);
     border-radius: 20px;
@@ -536,6 +559,10 @@ body {
         align-items: flex-start;
         gap: 1rem;
     }
+    
+    .chart-container {
+        height: 250px;
+    }
 }
 
 @media (max-width: 640px) {
@@ -545,6 +572,7 @@ body {
     
     .controls-section,
     .crowd-card,
+    .chart-card,
     .flights-card,
     .info-card {
         padding: 1.5rem;
@@ -552,5 +580,9 @@ body {
     
     .stats-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .chart-container {
+        height: 220px;
     }
 }
