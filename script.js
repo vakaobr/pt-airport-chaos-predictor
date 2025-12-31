@@ -11,10 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('date');
     const predictBtn = document.getElementById('predictBtn');
 
-    // Set min date to today and max to 7 days from now
+    // Set min date to today and max to 3 days from now (FlightAware free tier limit)
     const today = new Date();
     const maxDate = new Date();
-    maxDate.setDate(today.getDate() + 7);
+    maxDate.setDate(today.getDate() + 3);
     
     dateInput.min = today.toISOString().split('T')[0];
     dateInput.max = maxDate.toISOString().split('T')[0];
@@ -71,7 +71,15 @@ async function fetchAndDisplayPrediction(airport, date) {
         console.error('Error fetching prediction:', err);
         loading.classList.add('hidden');
         error.classList.remove('hidden');
-        error.textContent = `Failed to fetch data: ${err.message}. Please check your API configuration and try again.`;
+        
+        // Provide specific error messages
+        if (err.message.includes('Invalid start bound') || err.message.includes('time is too far')) {
+            error.textContent = `⚠️ Date is too far in the future. The free FlightAware API only provides data for the next 2-3 days. Please select today, tomorrow, or the day after.`;
+        } else if (err.message.includes('Rate limit')) {
+            error.textContent = `⚠️ API rate limit exceeded. Please wait a moment and try again.`;
+        } else {
+            error.textContent = `Failed to fetch data: ${err.message}. Please check your API configuration and try again.`;
+        }
     }
 }
 

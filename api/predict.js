@@ -175,6 +175,8 @@ async function fetchFlightAwareData(apiKey, airport, type, startISO, endISO) {
                 throw new Error(`Airport ${airport} not found or no data available.`);
             } else if (response.status === 429) {
                 throw new Error('Rate limit exceeded. Please try again later.');
+            } else if (response.status === 400 && errorText.includes('Invalid start bound')) {
+                throw new Error('Date is too far in the future. The free FlightAware API only provides data for the next 2-3 days.');
             } else {
                 throw new Error(`FlightAware API error (${response.status}): ${errorText.substring(0, 100)}`);
             }
