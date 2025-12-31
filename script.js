@@ -48,6 +48,17 @@ async function fetchAndDisplayPrediction(airport, date) {
     const error = document.getElementById('error');
     const timetableCard = document.getElementById('timetableCard');
 
+    // Check cache first
+    const cacheKey = frontendCache.key('prediction', { airport, date });
+    const cachedData = frontendCache.get(cacheKey);
+    
+    if (cachedData) {
+        console.log('✅ Using cached prediction data');
+        results.classList.remove('hidden');
+        displayResults(cachedData);
+        return;
+    }
+
     // Show loading state
     resultsSection.classList.remove('hidden');
     loading.classList.remove('hidden');
@@ -64,6 +75,10 @@ async function fetchAndDisplayPrediction(airport, date) {
         }
 
         const data = await response.json();
+        
+        // Cache the response (30 minutes TTL)
+        frontendCache.set(cacheKey, data, 30 * 60 * 1000);
+        console.log('✅ Cached prediction data for', airport, date);
         
         // Hide loading and show results
         loading.classList.add('hidden');
@@ -891,15 +906,28 @@ const enrichmentCache = {
 
 // Fetch airline enrichment data
 async function fetchAirlineEnrichment(code) {
+    // Check memory cache first (from old implementation)
     if (enrichmentCache.airlines[code]) {
         return enrichmentCache.airlines[code];
+    }
+    
+    // Check persistent cache
+    const cacheKey = frontendCache.key('airline', { code });
+    const cached = frontendCache.get(cacheKey);
+    if (cached) {
+        enrichmentCache.airlines[code] = cached; // Update memory cache
+        return cached;
     }
     
     try {
         const response = await fetch(`/api/aviationstack?type=airline&code=${code}`);
         if (response.ok) {
             const data = await response.json();
+            
+            // Cache for 7 days (static data)
+            frontendCache.set(cacheKey, data, 7 * 24 * 60 * 60 * 1000);
             enrichmentCache.airlines[code] = data;
+            
             return data;
         }
     } catch (e) {
@@ -911,15 +939,28 @@ async function fetchAirlineEnrichment(code) {
 
 // Fetch aircraft enrichment data
 async function fetchAircraftEnrichment(code) {
+    // Check memory cache first
     if (enrichmentCache.aircraft[code]) {
         return enrichmentCache.aircraft[code];
+    }
+    
+    // Check persistent cache
+    const cacheKey = frontendCache.key('aircraft', { code });
+    const cached = frontendCache.get(cacheKey);
+    if (cached) {
+        enrichmentCache.aircraft[code] = cached; // Update memory cache
+        return cached;
     }
     
     try {
         const response = await fetch(`/api/aviationstack?type=aircraft&code=${code}`);
         if (response.ok) {
             const data = await response.json();
+            
+            // Cache for 7 days (static data)
+            frontendCache.set(cacheKey, data, 7 * 24 * 60 * 60 * 1000);
             enrichmentCache.aircraft[code] = data;
+            
             return data;
         }
     } catch (e) {
@@ -954,3 +995,217 @@ async function showEnrichedTooltip(element, type, code) {
         }
     }
 }
+// Frontend cache manager with LocalStorage persistence
+// Stores API responses locally to minimize network requests
+
+class FrontendCache {
+    constructor(namespace = 'airportQueue') {
+        this.namespace = namespace;
+        this.memoryCache = new Map();
+        this.loadFromLocalStorage();
+    }
+
+    /**
+     * Generate cache key
+     */
+    key(prefix, params) {
+        const sortedParams = Object.keys(params || {})
+            .sort()
+            .map(k => `${k}=${params[k]}`)
+            .join('&');
+        return `${this.namespace}:${prefix}:${sortedParams}`;
+    }
+
+    /**
+     * Get item from cache (memory first, then localStorage)
+     */
+    get(key) {
+        // Check memory cache first
+        if (this.memoryCache.has(key)) {
+            const item = this.memoryCache.get(key);
+            if (this.isValid(item)) {
+                return item.data;
+            }
+            this.memoryCache.delete(key);
+        }
+
+        // Check localStorage
+        try {
+            const stored = localStorage.getItem(key);
+            if (stored) {
+                const item = JSON.parse(stored);
+                if (this.isValid(item)) {
+                    // Restore to memory cache
+                    this.memoryCache.set(key, item);
+                    return item.data;
+                }
+                // Remove expired item
+                localStorage.removeItem(key);
+            }
+        } catch (e) {
+            console.warn('LocalStorage error:', e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Set item in cache (both memory and localStorage)
+     */
+    set(key, data, ttl = 30 * 60 * 1000) {
+        const item = {
+            data,
+            expiry: Date.now() + ttl,
+            timestamp: Date.now()
+        };
+
+        // Store in memory
+        this.memoryCache.set(key, item);
+
+        // Store in localStorage
+        try {
+            localStorage.setItem(key, JSON.stringify(item));
+        } catch (e) {
+            console.warn('LocalStorage full, clearing old entries:', e);
+            this.cleanup();
+            try {
+                localStorage.setItem(key, JSON.stringify(item));
+            } catch (e2) {
+                console.error('Failed to store in localStorage:', e2);
+            }
+        }
+    }
+
+    /**
+     * Check if cached item is still valid
+     */
+    isValid(item) {
+        return item && Date.now() < item.expiry;
+    }
+
+    /**
+     * Clear specific key or all cache
+     */
+    clear(key = null) {
+        if (key) {
+            this.memoryCache.delete(key);
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn('LocalStorage error:', e);
+            }
+        } else {
+            this.memoryCache.clear();
+            this.clearLocalStorage();
+        }
+    }
+
+    /**
+     * Load cache from localStorage to memory
+     */
+    loadFromLocalStorage() {
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        const item = JSON.parse(stored);
+                        if (this.isValid(item)) {
+                            this.memoryCache.set(key, item);
+                        } else {
+                            // Remove expired
+                            localStorage.removeItem(key);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Error loading from localStorage:', e);
+        }
+    }
+
+    /**
+     * Clear all items from localStorage with our namespace
+     */
+    clearLocalStorage() {
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+        } catch (e) {
+            console.warn('Error clearing localStorage:', e);
+        }
+    }
+
+    /**
+     * Remove expired items from localStorage
+     */
+    cleanup() {
+        try {
+            const now = Date.now();
+            const keysToRemove = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        const item = JSON.parse(stored);
+                        if (now >= item.expiry) {
+                            keysToRemove.push(key);
+                            this.memoryCache.delete(key);
+                        }
+                    }
+                }
+            }
+            
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log('Cleaned up', keysToRemove.length, 'expired cache entries');
+        } catch (e) {
+            console.warn('Cleanup error:', e);
+        }
+    }
+
+    /**
+     * Get cache statistics
+     */
+    getStats() {
+        let localStorageCount = 0;
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(this.namespace)) {
+                    localStorageCount++;
+                }
+            }
+        } catch (e) {
+            // Ignore
+        }
+
+        return {
+            memorySize: this.memoryCache.size,
+            localStorageSize: localStorageCount,
+            totalSize: this.memoryCache.size + localStorageCount
+        };
+    }
+}
+
+// Export singleton instance
+const frontendCache = new FrontendCache('airportQueue');
+
+// Cleanup expired entries every 10 minutes
+setInterval(() => {
+    frontendCache.cleanup();
+}, 10 * 60 * 1000);
+
+// Cleanup on page load
+document.addEventListener('DOMContentLoaded', () => {
+    frontendCache.cleanup();
+    console.log('Frontend cache loaded:', frontendCache.getStats());
+});

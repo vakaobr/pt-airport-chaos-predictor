@@ -1,6 +1,8 @@
 // Vercel Serverless Function for FlightAware API
 // This keeps your API key secure on the server side
 
+const apiCache = require('../lib/cache');
+
 // EU Countries for filtering
 const EU_COUNTRIES = [
     'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
@@ -21,6 +23,21 @@ export default async function handler(req, res) {
     }
 
     const { airport, date } = req.query;
+
+    // Generate cache key and check cache
+    const cacheKey = apiCache.generateKey('flightaware', { airport, date });
+    const cachedData = apiCache.get(cacheKey);
+    
+    if (cachedData) {
+        console.log('✅ CACHE HIT for:', cacheKey);
+        return res.status(200).json({
+            ...cachedData,
+            cached: true,
+            cacheTime: new Date().toISOString()
+        });
+    }
+    
+    console.log('❌ CACHE MISS for:', cacheKey);
 
     console.log('========================================');
     console.log('Request received:', { airport, date });
@@ -110,6 +127,11 @@ export default async function handler(req, res) {
 
         // Analyze data
         const analysis = analyzeFlights(nonEuArrivals, nonEuDepartures);
+
+        // Cache the successful response (TTL: 30 minutes for flight data)
+        const cacheTTL = 30 * 60 * 1000; // 30 minutes
+        apiCache.set(cacheKey, analysis, cacheTTL);
+        console.log('✅ Cached response for:', cacheKey, 'TTL:', cacheTTL / 1000, 'seconds');
 
         return res.status(200).json(analysis);
     } catch (error) {

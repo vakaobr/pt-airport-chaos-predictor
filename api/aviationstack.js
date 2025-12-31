@@ -1,6 +1,8 @@
 // AviationStack API integration for enriched data
 // This endpoint fetches airline logos, aircraft details, and historical data
 
+const apiCache = require('../lib/cache');
+
 export default async function handler(req, res) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,6 +15,22 @@ export default async function handler(req, res) {
 
     const { type, code, airport, date } = req.query;
 
+    // Generate cache key based on request type
+    const cacheParams = { type, code, airport, date };
+    const cacheKey = apiCache.generateKey('aviationstack', cacheParams);
+    
+    // Check cache first (longer TTL for static data like airlines/aircraft)
+    const cachedData = apiCache.get(cacheKey);
+    if (cachedData) {
+        console.log('✅ AviationStack cache hit:', cacheKey);
+        return res.status(200).json({
+            ...cachedData,
+            cached: true
+        });
+    }
+    
+    console.log('❌ AviationStack cache miss:', cacheKey);
+
     // Get API key from environment
     const AVIATIONSTACK_API_KEY = process.env.AVIATIONSTACK_API_KEY;
 
@@ -24,23 +42,31 @@ export default async function handler(req, res) {
 
     try {
         let data = {};
+        let cacheTTL;
 
         switch (type) {
             case 'airline':
                 data = await fetchAirlineData(code, AVIATIONSTACK_API_KEY);
+                cacheTTL = 7 * 24 * 60 * 60 * 1000; // 7 days (static data)
                 break;
             
             case 'aircraft':
                 data = await fetchAircraftData(code, AVIATIONSTACK_API_KEY);
+                cacheTTL = 7 * 24 * 60 * 60 * 1000; // 7 days (static data)
                 break;
             
             case 'historical':
                 data = await fetchHistoricalData(airport, date, AVIATIONSTACK_API_KEY);
+                cacheTTL = 30 * 24 * 60 * 60 * 1000; // 30 days (historical data never changes)
                 break;
             
             default:
                 return res.status(400).json({ error: 'Invalid type parameter' });
         }
+
+        // Cache the response with appropriate TTL
+        apiCache.set(cacheKey, data, cacheTTL);
+        console.log('✅ Cached AviationStack response:', cacheKey, 'TTL:', cacheTTL / (24 * 60 * 60 * 1000), 'days');
 
         return res.status(200).json(data);
     } catch (error) {
