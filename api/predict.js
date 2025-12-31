@@ -22,7 +22,13 @@ export default async function handler(req, res) {
 
     const { airport, date } = req.query;
 
+    console.log('========================================');
     console.log('Request received:', { airport, date });
+    console.log('Environment check:', {
+        hasApiKey: !!process.env.FLIGHTAWARE_API_KEY,
+        apiKeyLength: process.env.FLIGHTAWARE_API_KEY?.length
+    });
+    console.log('========================================');
 
     if (!airport || !date) {
         return res.status(400).json({ error: 'Missing required parameters: airport and date' });
@@ -32,27 +38,64 @@ export default async function handler(req, res) {
     const apiKey = process.env.FLIGHTAWARE_API_KEY;
     
     if (!apiKey) {
-        console.error('FlightAware API key not configured');
-        return res.status(500).json({ error: 'API key not configured. Please add FLIGHTAWARE_API_KEY to your Vercel environment variables.' });
+        console.error('❌ FlightAware API key not configured');
+        return res.status(500).json({ 
+            error: 'API key not configured',
+            details: 'Please add FLIGHTAWARE_API_KEY to your Vercel environment variables and redeploy.',
+            hint: 'Check Settings → Environment Variables in Vercel dashboard'
+        });
     }
 
     try {
-        // Parse the date
-        const targetDate = new Date(date);
-        const startTime = new Date(targetDate);
-        startTime.setUTCHours(0, 0, 0, 0);
-        const endTime = new Date(targetDate);
-        endTime.setUTCHours(23, 59, 59, 999);
+        // Parse the date - FlightAware expects YYYY-MM-DD format or Unix timestamps
+        const targetDate = new Date(date + 'T00:00:00Z');
+        
+        // Use Unix timestamps (seconds since epoch) - FlightAware accepts these
+        const startTimestamp = Math.floor(targetDate.getTime() / 1000);
+        const endTimestamp = startTimestamp + (24 * 60 * 60) - 1; // End of day
 
-        console.log('Fetching flights for:', { airport, start: startTime.toISOString(), end: endTime.toISOString() });
+        console.log('📅 Date range:', { 
+            date: date,
+            startTimestamp: startTimestamp,
+            endTimestamp: endTimestamp,
+            startDate: new Date(startTimestamp * 1000).toISOString(),
+            endDate: new Date(endTimestamp * 1000).toISOString()
+        });
 
         // Fetch arrivals and departures from FlightAware API
-        const [arrivalsData, departuresData] = await Promise.all([
-            fetchFlightAwareData(apiKey, airport, 'arrivals', startTime, endTime),
-            fetchFlightAwareData(apiKey, airport, 'departures', startTime, endTime)
-        ]);
+        console.log('🛫 Fetching flight data...');
+        
+        let arrivalsData = [];
+        let departuresData = [];
+        let apiError = null;
 
-        console.log('Flights fetched:', { arrivals: arrivalsData.length, departures: departuresData.length });
+        try {
+            [arrivalsData, departuresData] = await Promise.all([
+                fetchFlightAwareData(apiKey, airport, 'arrivals', startTimestamp, endTimestamp),
+                fetchFlightAwareData(apiKey, airport, 'departures', startTimestamp, endTimestamp)
+            ]);
+        } catch (fetchError) {
+            console.error('❌ FlightAware API fetch error:', fetchError.message);
+            apiError = fetchError.message;
+            
+            // Return mock data for testing if API fails
+            console.log('⚠️ Using mock data for testing purposes');
+            return res.status(200).json({
+                arrivals: [],
+                departures: [],
+                totalFlights: 0,
+                peakHour: 'N/A',
+                peakFlights: [],
+                flightsByHour: {},
+                warning: 'Could not fetch real data from FlightAware API. Please check your API key and permissions.',
+                apiError: apiError
+            });
+        }
+
+        console.log('✅ Flights fetched:', { 
+            arrivals: arrivalsData.length, 
+            departures: departuresData.length 
+        });
 
         // Filter for non-EU flights
         const nonEuArrivals = filterNonEuFlights(arrivalsData, 'arrival');
@@ -74,21 +117,21 @@ export default async function handler(req, res) {
 }
 
 // Fetch data from FlightAware API
-async function fetchFlightAwareData(apiKey, airport, type, startTime, endTime) {
+async function fetchFlightAwareData(apiKey, airport, type, startTimestamp, endTimestamp) {
     // FlightAware AeroAPI v4 endpoint - Updated format
     const baseUrl = 'https://aeroapi.flightaware.com/aeroapi';
     const endpoint = type === 'arrivals' 
         ? `${baseUrl}/airports/${airport}/flights/arrivals`
         : `${baseUrl}/airports/${airport}/flights/departures`;
 
-    // Format dates for FlightAware API (ISO 8601)
+    // Use Unix timestamps (seconds since epoch) - FlightAware prefers this format
     const params = new URLSearchParams({
-        start: startTime.toISOString(),
-        end: endTime.toISOString()
+        start: startTimestamp.toString(),
+        end: endTimestamp.toString()
     });
 
     const url = `${endpoint}?${params}`;
-    console.log('Fetching from:', url);
+    console.log(`🌐 Fetching ${type} from:`, url);
 
     const response = await fetch(url, {
         headers: {
@@ -97,13 +140,37 @@ async function fetchFlightAwareData(apiKey, airport, type, startTime, endTime) {
         }
     });
 
+    console.log(`📡 FlightAware response status:`, response.status);
+
     if (!response.ok) {
         const errorText = await response.text();
-        console.error('FlightAware API error:', { status: response.status, body: errorText });
-        throw new Error(`FlightAware API error (${response.status}): ${errorText}`);
+        console.error('❌ FlightAware API error:', { 
+            status: response.status, 
+            statusText: response.statusText,
+            body: errorText.substring(0, 200) // Log first 200 chars
+        });
+        
+        // Provide helpful error messages
+        if (response.status === 401) {
+            throw new Error('Invalid API key. Please check your FlightAware API key.');
+        } else if (response.status === 403) {
+            throw new Error('API key does not have permission to access this endpoint.');
+        } else if (response.status === 404) {
+            throw new Error(`Airport ${airport} not found or no data available.`);
+        } else if (response.status === 429) {
+            throw new Error('Rate limit exceeded. Please try again later.');
+        } else {
+            throw new Error(`FlightAware API error (${response.status}): ${errorText.substring(0, 100)}`);
+        }
     }
 
     const data = await response.json();
+    console.log(`✅ Received ${type} data:`, {
+        hasArrivals: !!data.arrivals,
+        hasDepartures: !!data.departures,
+        hasFlights: !!data.flights,
+        keys: Object.keys(data)
+    });
     
     // FlightAware returns data in 'arrivals' or 'departures' or 'flights' key
     return data.arrivals || data.departures || data.flights || [];
