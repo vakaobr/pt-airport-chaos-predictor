@@ -129,56 +129,86 @@ async function fetchFlightAwareData(apiKey, airport, type, startISO, endISO) {
         ? `${baseUrl}/airports/${airport}/flights/arrivals`
         : `${baseUrl}/airports/${airport}/flights/departures`;
 
-    // Use ISO8601 format without milliseconds (YYYY-MM-DDTHH:MM:SSZ)
-    const params = new URLSearchParams({
-        start: startISO,
-        end: endISO
-    });
+    let allFlights = [];
+    let cursor = null;
+    let pageCount = 0;
+    const maxPages = 10; // Safety limit to avoid infinite loops
 
-    const url = `${endpoint}?${params}`;
-    console.log(`🌐 Fetching ${type} from:`, url);
+    do {
+        // Use ISO8601 format without milliseconds (YYYY-MM-DDTHH:MM:SSZ)
+        const params = new URLSearchParams({
+            start: startISO,
+            end: endISO
+        });
 
-    const response = await fetch(url, {
-        headers: {
-            'x-apikey': apiKey,
-            'Accept': 'application/json; charset=UTF-8'
+        // Add cursor for pagination (if not first page)
+        if (cursor) {
+            params.append('cursor', cursor);
         }
-    });
 
-    console.log(`📡 FlightAware response status:`, response.status);
+        const url = `${endpoint}?${params}`;
+        console.log(`🌐 Fetching ${type} page ${pageCount + 1} from:`, url);
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ FlightAware API error:', { 
-            status: response.status, 
-            statusText: response.statusText,
-            body: errorText.substring(0, 200) // Log first 200 chars
+        const response = await fetch(url, {
+            headers: {
+                'x-apikey': apiKey,
+                'Accept': 'application/json; charset=UTF-8'
+            }
+        });
+
+        console.log(`📡 FlightAware response status:`, response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ FlightAware API error:', { 
+                status: response.status, 
+                statusText: response.statusText,
+                body: errorText.substring(0, 200) // Log first 200 chars
+            });
+            
+            // Provide helpful error messages
+            if (response.status === 401) {
+                throw new Error('Invalid API key. Please check your FlightAware API key.');
+            } else if (response.status === 403) {
+                throw new Error('API key does not have permission to access this endpoint.');
+            } else if (response.status === 404) {
+                throw new Error(`Airport ${airport} not found or no data available.`);
+            } else if (response.status === 429) {
+                throw new Error('Rate limit exceeded. Please try again later.');
+            } else {
+                throw new Error(`FlightAware API error (${response.status}): ${errorText.substring(0, 100)}`);
+            }
+        }
+
+        const data = await response.json();
+        console.log(`✅ Received ${type} data (page ${pageCount + 1}):`, {
+            hasArrivals: !!data.arrivals,
+            hasDepartures: !!data.departures,
+            hasFlights: !!data.flights,
+            flightsOnPage: (data.arrivals || data.departures || data.flights || []).length,
+            numPages: data.num_pages,
+            hasMore: !!data.links?.next
         });
         
-        // Provide helpful error messages
-        if (response.status === 401) {
-            throw new Error('Invalid API key. Please check your FlightAware API key.');
-        } else if (response.status === 403) {
-            throw new Error('API key does not have permission to access this endpoint.');
-        } else if (response.status === 404) {
-            throw new Error(`Airport ${airport} not found or no data available.`);
-        } else if (response.status === 429) {
-            throw new Error('Rate limit exceeded. Please try again later.');
-        } else {
-            throw new Error(`FlightAware API error (${response.status}): ${errorText.substring(0, 100)}`);
-        }
+        // FlightAware returns data in 'arrivals' or 'departures' or 'flights' key
+        const pageFlights = data.arrivals || data.departures || data.flights || [];
+        allFlights = allFlights.concat(pageFlights);
+
+        // Check if there's a next page
+        cursor = data.links?.next ? new URL(data.links.next).searchParams.get('cursor') : null;
+        pageCount++;
+
+        console.log(`📄 Page ${pageCount} complete: ${pageFlights.length} flights. Total so far: ${allFlights.length}. More pages: ${!!cursor}`);
+
+    } while (cursor && pageCount < maxPages);
+
+    if (cursor) {
+        console.log(`⚠️ Stopped at page ${maxPages}. There may be more flights available.`);
     }
 
-    const data = await response.json();
-    console.log(`✅ Received ${type} data:`, {
-        hasArrivals: !!data.arrivals,
-        hasDepartures: !!data.departures,
-        hasFlights: !!data.flights,
-        keys: Object.keys(data)
-    });
+    console.log(`✅ Total ${type} fetched: ${allFlights.length} flights across ${pageCount} pages`);
     
-    // FlightAware returns data in 'arrivals' or 'departures' or 'flights' key
-    return data.arrivals || data.departures || data.flights || [];
+    return allFlights;
 }
 
 // Filter for non-EU flights
