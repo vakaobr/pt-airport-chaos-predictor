@@ -19,8 +19,5 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ],
-  "env": {
-    "FLIGHTAWARE_API_KEY": "@flightaware-api-key"
-  }
+  ]
 }
