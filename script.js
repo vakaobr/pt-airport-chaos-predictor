@@ -831,6 +831,7 @@ function renderTimetableContent(data, filter = 'all') {
                     const airline = flight.airline || 'Unknown';
                     const airlineCode = airline.trim();
                     const aircraftCode = aircraft.trim();
+                    const registration = flight.aircraftRegistration; // Tail number (e.g., CS-TUA)
                     
                     return `
                         <tr>
@@ -867,32 +868,57 @@ function renderTimetableContent(data, filter = 'all') {
                                 <span class="tooltip-wrapper" data-tooltip="${aircraftCode}">
                                     ${aircraft}
                                     <span class="aircraft-tooltip">
-                                        <img src="https://cdn.jetphotos.com/400/6/${aircraftCode.toLowerCase()}-001.jpg" 
-                                             alt="${aircraftCode}" 
-                                             class="aircraft-image"
-                                             onerror="this.onerror=null; 
-                                                      this.src='https://www.norebbo.com/img/aircraft/${aircraftCode}.jpg'; 
-                                                      this.onerror=function(){
-                                                          this.style.display='none'; 
-                                                          this.nextElementSibling.style.display='flex';
-                                                      };"
-                                             style="display: block;">
-                                        <div class="aircraft-fallback" style="display: none;">
+                                        ${registration ? `
+                                            <img src="https://api.planespotters.net/pub/photos/500/${registration}" 
+                                                 alt="${registration}" 
+                                                 class="aircraft-image"
+                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                                 style="display: block;">
+                                        ` : ''}
+                                        <div class="aircraft-fallback" style="display: ${registration ? 'none' : 'flex'};">
                                             <svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <!-- Fuselage -->
                                                 <defs>
-                                                    <linearGradient id="fuselageGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <linearGradient id="fuselageGrad${aircraftCode}" x1="0%" y1="0%" x2="100%" y2="0%">
                                                         <stop offset="0%" style="stop-color:#088395;stop-opacity:0.3" />
                                                         <stop offset="50%" style="stop-color:#088395;stop-opacity:0.5" />
                                                         <stop offset="100%" style="stop-color:#088395;stop-opacity:0.3" />
                                                     </linearGradient>
                                                 </defs>
-                                                <ellipse cx="90" cy="45" rx="60" ry="14" fill="url(#fuselageGrad)"/>
+                                                <ellipse cx="90" cy="45" rx="60" ry="14" fill="url(#fuselageGrad${aircraftCode})"/>
                                                 <rect x="40" y="36" width="100" height="18" rx="9" fill="#088395"/>
                                                 
                                                 <!-- Wings -->
                                                 <path d="M55 45 L15 33 L15 39 L55 51 Z" fill="#0a4d68" opacity="0.8"/>
                                                 <path d="M125 45 L165 33 L165 39 L125 51 Z" fill="#0a4d68" opacity="0.8"/>
+                                                
+                                                <!-- Tail -->
+                                                <path d="M133 36 L145 18 L150 36 Z" fill="#088395"/>
+                                                <path d="M136 45 L152 45 L152 51 L136 51 Z" fill="#0a4d68" opacity="0.6"/>
+                                                
+                                                <!-- Cockpit window -->
+                                                <circle cx="42" cy="45" r="7" fill="#c85c5c" opacity="0.3"/>
+                                                <circle cx="42" cy="45" r="4" fill="white" opacity="0.6"/>
+                                                
+                                                <!-- Engine details -->
+                                                <ellipse cx="70" cy="54" rx="10" ry="6" fill="#6b6b6b" opacity="0.4"/>
+                                                <ellipse cx="110" cy="54" rx="10" ry="6" fill="#6b6b6b" opacity="0.4"/>
+                                                
+                                                <!-- Passenger windows -->
+                                                <circle cx="58" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="68" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="78" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="88" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="98" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="108" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="118" cy="41" r="2" fill="white" opacity="0.6"/>
+                                                <circle cx="128" cy="41" r="2" fill="white" opacity="0.6"/>
+                                            </svg>
+                                        </div>
+                                        <span class="aircraft-name">${getAircraftName(aircraftCode)}${registration ? ` (${registration})` : ''}</span>
+                                    </span>
+                                </span>
+                            </td>
                                                 
                                                 <!-- Tail -->
                                                 <path d="M133 36 L145 18 L150 36 Z" fill="#088395"/>

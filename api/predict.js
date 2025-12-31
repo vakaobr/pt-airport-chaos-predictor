@@ -294,6 +294,7 @@ function filterNonEuFlights(flights, type) {
         
         // Extract aircraft information
         const aircraftType = flight.aircraft_type || flight.aircraft?.type || 'Unknown';
+        const aircraftRegistration = flight.registration || null;  // Tail number (e.g., CS-TUA, N12345)
         const passengers = estimatePassengersForAircraft(aircraftType);
         
         // Extract country information from ICAO code
@@ -310,6 +311,7 @@ function filterNonEuFlights(flights, type) {
             estimatedTime: estimatedTime,
             type: type,
             aircraftType: aircraftType,
+            aircraftRegistration: aircraftRegistration,  // Add registration to response
             estimatedPassengers: passengers,
             countryCode: countryInfo.code,
             countryName: countryInfo.name
