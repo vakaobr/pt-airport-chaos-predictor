@@ -882,10 +882,16 @@ function renderTimetableContent(data, filter = 'all') {
                                             <img src="https://api.planespotters.net/pub/photos/500/${registration}" 
                                                  alt="${registration}" 
                                                  class="aircraft-image"
-                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                                 onerror="this.onerror=null; this.src='https://images.aviapages.com/aircraft/${aircraftCode.toUpperCase()}.jpg'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex'};"
                                                  style="display: block;">
-                                        ` : ''}
-                                        <div class="aircraft-fallback" style="display: ${registration ? 'none' : 'flex'};">
+                                        ` : `
+                                            <img src="https://images.aviapages.com/aircraft/${aircraftCode.toUpperCase()}.jpg" 
+                                                 alt="${aircraftCode}" 
+                                                 class="aircraft-image"
+                                                 onerror="this.onerror=null; this.src='https://content.airhex.com/content/logos/aircraft_${aircraftCode}_350_100_r.png'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex'};"
+                                                 style="display: block;">
+                                        `}
+                                        <div class="aircraft-fallback" style="display: none;">
                                             <svg width="180" height="90" viewBox="0 0 180 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <!-- Fuselage -->
                                                 <defs>
@@ -925,7 +931,7 @@ function renderTimetableContent(data, filter = 'all') {
                                                 <circle cx="128" cy="41" r="2" fill="white" opacity="0.6"/>
                                             </svg>
                                         </div>
-                                        <span class="aircraft-name">${getAircraftName(aircraftCode)}${registration ? ` (${registration})` : ''}</span>
+                                        <span class="aircraft-name">${getAircraftName(aircraftCode)}${registration ? ` · ${registration}` : ''}</span>
                                     </span>
                                 </span>
                             </td>

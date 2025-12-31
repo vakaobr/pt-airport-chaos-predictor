@@ -216,6 +216,13 @@ async function fetchFlightAwareData(apiKey, airport, type, startISO, endISO) {
         
         // FlightAware returns data in 'arrivals' or 'departures' or 'flights' key
         const pageFlights = data.arrivals || data.departures || data.flights || [];
+        
+        // DEBUG: Log complete first flight to see all available fields
+        if (pageFlights.length > 0 && pageCount === 0) {
+            console.log('🔍 COMPLETE FIRST FLIGHT OBJECT:', JSON.stringify(pageFlights[0], null, 2));
+            console.log('🔑 Available fields:', Object.keys(pageFlights[0]));
+        }
+        
         allFlights = allFlights.concat(pageFlights);
 
         // Check if there's a next page
