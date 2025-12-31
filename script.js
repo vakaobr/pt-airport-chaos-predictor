@@ -727,7 +727,25 @@ function getAirlineName(code) {
         'AZA': 'Alitalia',
         'AZ': 'Alitalia',
         'ITA': 'ITA Airways',
-        'AZ': 'ITA Airways'
+        // African airlines
+        'DTA': 'TAAG Angola Airlines',
+        'DT': 'TAAG Angola Airlines',
+        // Brazilian airlines
+        'AZU': 'Azul Brazilian Airlines',
+        'AD': 'Azul Brazilian Airlines',
+        'GLO': 'Gol Transportes Aéreos',
+        'G3': 'Gol Transportes Aéreos',
+        'MMZ': 'Euro Atlantic Airways',
+        'YU': 'Euro Atlantic Airways',
+        // Other Portuguese airlines
+        'PGA': 'Portugália',
+        'NI': 'Portugália',
+        'RUK': 'Ryanair UK',
+        'RK': 'Ryanair UK',
+        'TVF': 'Transavia France',
+        'TO': 'Transavia France',
+        'TRA': 'Transavia',
+        'HV': 'Transavia'
     };
     
     return airlines[code] || code;

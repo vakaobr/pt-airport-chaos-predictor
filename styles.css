@@ -598,6 +598,7 @@ body {
     padding: 1rem;
     border-bottom: 1px solid var(--color-light-gray);
     color: var(--color-dark);
+    vertical-align: middle;
 }
 
 .timetable-table tbody tr {
@@ -644,12 +645,14 @@ body {
     vertical-align: middle;
     border-radius: 2px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    display: inline-block;
 }
 
 .route-cell {
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 100%;
 }
 
 /* Tooltip wrapper */
@@ -668,7 +671,7 @@ body {
     visibility: hidden;
     opacity: 0;
     position: absolute;
-    bottom: 125%;
+    top: 125%;
     left: 50%;
     transform: translateX(-50%);
     background: white;
@@ -680,6 +683,31 @@ body {
     text-align: center;
     transition: opacity 0.3s ease, visibility 0.3s ease;
     pointer-events: none;
+    white-space: normal;
+}
+
+/* Show tooltip above for rows near bottom, below for rows near top */
+.timetable-table tbody tr:nth-child(1) .airline-tooltip,
+.timetable-table tbody tr:nth-child(2) .airline-tooltip,
+.timetable-table tbody tr:nth-child(3) .airline-tooltip,
+.timetable-table tbody tr:nth-child(1) .aircraft-tooltip,
+.timetable-table tbody tr:nth-child(2) .aircraft-tooltip,
+.timetable-table tbody tr:nth-child(3) .aircraft-tooltip {
+    top: auto;
+    bottom: auto;
+    top: 125%;
+}
+
+.timetable-table tbody tr:nth-child(1) .airline-tooltip::after,
+.timetable-table tbody tr:nth-child(2) .airline-tooltip::after,
+.timetable-table tbody tr:nth-child(3) .airline-tooltip::after,
+.timetable-table tbody tr:nth-child(1) .aircraft-tooltip::after,
+.timetable-table tbody tr:nth-child(2) .aircraft-tooltip::after,
+.timetable-table tbody tr:nth-child(3) .aircraft-tooltip::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: white;
 }
 
 .tooltip-wrapper:hover .airline-tooltip {
@@ -707,7 +735,7 @@ body {
     visibility: hidden;
     opacity: 0;
     position: absolute;
-    bottom: 125%;
+    top: 125%;
     left: 50%;
     transform: translateX(-50%);
     background: white;
@@ -719,6 +747,7 @@ body {
     text-align: center;
     transition: opacity 0.3s ease, visibility 0.3s ease;
     pointer-events: none;
+    white-space: normal;
 }
 
 .tooltip-wrapper:hover .aircraft-tooltip {
@@ -747,11 +776,11 @@ body {
 .aircraft-tooltip::after {
     content: '';
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
     border: 6px solid transparent;
-    border-top-color: white;
+    border-bottom-color: white;
 }
 
 .empty-timetable {
