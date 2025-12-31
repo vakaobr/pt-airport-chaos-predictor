@@ -265,6 +265,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log('✅ Predict button event listener attached');
     
+    // Setup clear cache button
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', () => {
+            if (confirm('Clear all cached flight data? This will force fresh data on next search.')) {
+                frontendCache.clear();
+                alert('✅ Cache cleared successfully! Next search will fetch fresh data.');
+                console.log('🗑️ Cache cleared by user');
+            }
+        });
+    }
+    
     // Setup warning banner close button
     const closeBtn = document.getElementById('closeWarning');
     if (closeBtn) {
