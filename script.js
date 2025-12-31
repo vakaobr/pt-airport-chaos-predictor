@@ -606,7 +606,42 @@ function renderTimetableContent(data, filter = 'all') {
                                 <span class="tooltip-wrapper" data-tooltip="${aircraftCode}">
                                     ${aircraft}
                                     <span class="aircraft-tooltip">
-                                        <div class="aircraft-icon">✈️</div>
+                                        <img src="https://cdn.jetphotos.com/400/6/${aircraftCode.toLowerCase()}.jpg" 
+                                             alt="${aircraftCode}" 
+                                             class="aircraft-image"
+                                             onerror="this.onerror=null; this.src='https://www.airport-data.com/images/aircraft-silhouettes/${aircraftCode}.gif'; this.onerror=function(){this.src='https://raw.githubusercontent.com/sexym0nk3y/aircraft-silhouettes/master/silhouettes/${aircraftCode}.png'; this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};};"
+                                             style="display: block;">
+                                        <div class="aircraft-fallback" style="display: none;">
+                                            <svg width="140" height="70" viewBox="0 0 140 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <!-- Fuselage -->
+                                                <ellipse cx="70" cy="35" rx="50" ry="12" fill="#088395" opacity="0.2"/>
+                                                <rect x="30" y="28" width="80" height="14" rx="7" fill="#088395"/>
+                                                
+                                                <!-- Wings -->
+                                                <path d="M45 35 L10 25 L10 30 L45 40 Z" fill="#0a4d68" opacity="0.8"/>
+                                                <path d="M95 35 L130 25 L130 30 L95 40 Z" fill="#0a4d68" opacity="0.8"/>
+                                                
+                                                <!-- Tail -->
+                                                <path d="M105 28 L115 15 L118 28 Z" fill="#088395"/>
+                                                <path d="M108 35 L120 35 L120 40 L108 40 Z" fill="#0a4d68" opacity="0.6"/>
+                                                
+                                                <!-- Cockpit -->
+                                                <circle cx="32" cy="35" r="6" fill="#c85c5c" opacity="0.3"/>
+                                                
+                                                <!-- Engine details -->
+                                                <ellipse cx="55" cy="42" rx="8" ry="5" fill="#6b6b6b" opacity="0.4"/>
+                                                <ellipse cx="85" cy="42" rx="8" ry="5" fill="#6b6b6b" opacity="0.4"/>
+                                                
+                                                <!-- Windows -->
+                                                <circle cx="45" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                                <circle cx="52" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                                <circle cx="59" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                                <circle cx="66" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                                <circle cx="73" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                                <circle cx="80" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                                <circle cx="87" cy="32" r="1.5" fill="white" opacity="0.6"/>
+                                            </svg>
+                                        </div>
                                         <span class="aircraft-name">${getAircraftName(aircraftCode)}</span>
                                     </span>
                                 </span>
@@ -801,4 +836,121 @@ function getAircraftName(code) {
     // Remove trailing spaces
     const cleanCode = code.trim();
     return aircraft[cleanCode] || cleanCode;
+}
+// Add dynamic tooltip positioning to prevent clipping
+document.addEventListener('DOMContentLoaded', () => {
+    // Position tooltips dynamically when shown
+    document.addEventListener('mouseover', (e) => {
+        const wrapper = e.target.closest('.tooltip-wrapper');
+        if (!wrapper) return;
+        
+        const tooltip = wrapper.querySelector('.airline-tooltip, .aircraft-tooltip');
+        if (!tooltip) return;
+        
+        // Get wrapper position
+        const rect = wrapper.getBoundingClientRect();
+        
+        // Calculate tooltip position (below the element, centered)
+        const left = rect.left + (rect.width / 2);
+        const top = rect.bottom + 10;
+        
+        // Apply position
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+        tooltip.style.transform = 'translateX(-50%)';
+        
+        // Check if tooltip goes off screen and adjust
+        setTimeout(() => {
+            const tooltipRect = tooltip.getBoundingClientRect();
+            
+            // Adjust if goes off right side
+            if (tooltipRect.right > window.innerWidth) {
+                tooltip.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px';
+                tooltip.style.transform = 'none';
+            }
+            
+            // Adjust if goes off left side
+            if (tooltipRect.left < 0) {
+                tooltip.style.left = '10px';
+                tooltip.style.transform = 'none';
+            }
+            
+            // Show above if goes off bottom
+            if (tooltipRect.bottom > window.innerHeight) {
+                tooltip.style.top = (rect.top - tooltipRect.height - 10) + 'px';
+            }
+        }, 10);
+    });
+});
+
+// AviationStack enrichment cache
+const enrichmentCache = {
+    airlines: {},
+    aircraft: {}
+};
+
+// Fetch airline enrichment data
+async function fetchAirlineEnrichment(code) {
+    if (enrichmentCache.airlines[code]) {
+        return enrichmentCache.airlines[code];
+    }
+    
+    try {
+        const response = await fetch(`/api/aviationstack?type=airline&code=${code}`);
+        if (response.ok) {
+            const data = await response.json();
+            enrichmentCache.airlines[code] = data;
+            return data;
+        }
+    } catch (e) {
+        console.log('Could not fetch airline enrichment:', e);
+    }
+    
+    return null;
+}
+
+// Fetch aircraft enrichment data
+async function fetchAircraftEnrichment(code) {
+    if (enrichmentCache.aircraft[code]) {
+        return enrichmentCache.aircraft[code];
+    }
+    
+    try {
+        const response = await fetch(`/api/aviationstack?type=aircraft&code=${code}`);
+        if (response.ok) {
+            const data = await response.json();
+            enrichmentCache.aircraft[code] = data;
+            return data;
+        }
+    } catch (e) {
+        console.log('Could not fetch aircraft enrichment:', e);
+    }
+    
+    return null;
+}
+
+// Enhanced tooltip with enriched data
+async function showEnrichedTooltip(element, type, code) {
+    const tooltip = element.querySelector(`.${type}-tooltip`);
+    if (!tooltip) return;
+    
+    const data = type === 'airline' 
+        ? await fetchAirlineEnrichment(code)
+        : await fetchAircraftEnrichment(code);
+    
+    if (data && !data.error) {
+        if (type === 'airline' && data.logoUrl) {
+            const img = tooltip.querySelector('.airline-logo');
+            if (img) {
+                img.src = data.logoUrl;
+            }
+        }
+        
+        if (type === 'aircraft' && data.details) {
+            const nameEl = tooltip.querySelector('.aircraft-name');
+            if (nameEl && data.name) {
+                nameEl.textContent = data.name;
+            }
+        }
+    }
 }
