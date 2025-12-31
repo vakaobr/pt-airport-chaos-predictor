@@ -75,8 +75,15 @@ async function fetchAndDisplayPrediction(airport, date) {
     }
 }
 
+// Global variables
+let flightsChart = null;
+let currentFlightData = null;
+
 // Display the prediction results
 function displayResults(data) {
+    // Store data globally for interactive features
+    currentFlightData = data;
+    
     // Update crowd level badge and meter
     const crowdLevel = calculateCrowdLevel(data.totalFlights);
     updateCrowdDisplay(crowdLevel, data.totalFlights);
@@ -86,6 +93,9 @@ function displayResults(data) {
     document.getElementById('departures').textContent = data.departures.length;
     document.getElementById('totalPassengers').textContent = estimatePassengers(data.totalFlights).toLocaleString();
     document.getElementById('peakTime').textContent = data.peakHour || 'N/A';
+
+    // Setup interactive panels
+    setupInteractivePanels();
 
     // Display hourly chart
     displayHourlyChart(data.flightsByHour);
@@ -188,9 +198,6 @@ function estimatePassengers(totalFlights) {
     // Assume average of 180 passengers per flight (mix of short and long haul)
     return Math.round(totalFlights * 180);
 }
-
-// Global variable to store chart instance
-let flightsChart = null;
 
 // Display hourly chart
 function displayHourlyChart(flightsByHour) {
@@ -317,7 +324,164 @@ function displayHourlyChart(flightsByHour) {
             interaction: {
                 intersect: false,
                 mode: 'index'
+            },
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    showTimetableForHour(index);
+                }
             }
         }
     });
+}
+
+// Setup interactive panels
+function setupInteractivePanels() {
+    // Arrivals panel click
+    document.getElementById('arrivalsPanel').onclick = () => {
+        showTimetable('arrivals', 'Arrivals Timetable');
+    };
+    
+    // Departures panel click
+    document.getElementById('departuresPanel').onclick = () => {
+        showTimetable('departures', 'Departures Timetable');
+    };
+    
+    // Close timetable button
+    document.getElementById('closeTimetable').onclick = () => {
+        document.getElementById('timetableCard').classList.add('hidden');
+    };
+    
+    // Tab switching
+    document.querySelectorAll('.timetable-tab').forEach(tab => {
+        tab.onclick = (e) => {
+            // Update active tab
+            document.querySelectorAll('.timetable-tab').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            // Get filter type
+            const filterType = e.target.dataset.tab;
+            
+            // Re-render timetable with filter
+            if (currentTimetableData) {
+                renderTimetableContent(currentTimetableData, filterType);
+            }
+        };
+    });
+}
+
+// Store current timetable data
+let currentTimetableData = null;
+
+// Show timetable for specific type
+function showTimetable(type, title) {
+    if (!currentFlightData) return;
+    
+    const flights = type === 'arrivals' 
+        ? currentFlightData.arrivals 
+        : currentFlightData.departures;
+    
+    currentTimetableData = { arrivals: currentFlightData.arrivals, departures: currentFlightData.departures };
+    
+    document.getElementById('timetableTitle').textContent = title;
+    document.getElementById('timetableCard').classList.remove('hidden');
+    
+    // Set the appropriate tab active
+    document.querySelectorAll('.timetable-tab').forEach(t => t.classList.remove('active'));
+    const activeTab = type === 'arrivals' ? 1 : type === 'departures' ? 2 : 0;
+    document.querySelectorAll('.timetable-tab')[activeTab].classList.add('active');
+    
+    renderTimetableContent(currentTimetableData, type);
+    
+    // Scroll to timetable
+    document.getElementById('timetableCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Show timetable for specific hour
+function showTimetableForHour(hour) {
+    if (!currentFlightData) return;
+    
+    const hourFlights = currentFlightData.flightsByHour[hour.toString()] || [];
+    
+    if (hourFlights.length === 0) {
+        return; // Don't show empty timetable
+    }
+    
+    // Separate into arrivals and departures
+    const arrivals = hourFlights.filter(f => f.type === 'arrival');
+    const departures = hourFlights.filter(f => f.type === 'departure');
+    
+    currentTimetableData = { arrivals, departures };
+    
+    const hourLabel = hour.toString().padStart(2, '0') + ':00';
+    document.getElementById('timetableTitle').textContent = `Flights at ${hourLabel} UTC`;
+    document.getElementById('timetableCard').classList.remove('hidden');
+    
+    // Set "All Flights" tab active
+    document.querySelectorAll('.timetable-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.timetable-tab')[0].classList.add('active');
+    
+    renderTimetableContent(currentTimetableData, 'all');
+    
+    // Scroll to timetable
+    document.getElementById('timetableCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Render timetable content
+function renderTimetableContent(data, filter = 'all') {
+    const content = document.getElementById('timetableContent');
+    
+    let flights = [];
+    if (filter === 'all') {
+        flights = [...data.arrivals, ...data.departures];
+    } else if (filter === 'arrivals') {
+        flights = data.arrivals;
+    } else if (filter === 'departures') {
+        flights = data.departures;
+    }
+    
+    // Sort by scheduled time
+    flights.sort((a, b) => {
+        const timeA = new Date(a.scheduledTime || a.estimatedTime);
+        const timeB = new Date(b.scheduledTime || b.estimatedTime);
+        return timeA - timeB;
+    });
+    
+    if (flights.length === 0) {
+        content.innerHTML = '<div class="empty-timetable">No flights found</div>';
+        return;
+    }
+    
+    const table = `
+        <table class="timetable-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Flight</th>
+                    <th>Airline</th>
+                    <th>Route</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${flights.map(flight => {
+                    const time = new Date(flight.scheduledTime || flight.estimatedTime);
+                    const timeStr = time.toISOString().substring(11, 16); // HH:MM
+                    const route = flight.origin || flight.destination || 'Unknown';
+                    
+                    return `
+                        <tr>
+                            <td class="flight-time-cell">${timeStr}</td>
+                            <td class="flight-number-cell">${flight.flightNumber}</td>
+                            <td>${flight.airline}</td>
+                            <td>${route}</td>
+                            <td><span class="flight-badge ${flight.type}">${flight.type}</span></td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    content.innerHTML = table;
 }

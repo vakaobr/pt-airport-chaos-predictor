@@ -74,11 +74,11 @@
                     </div>
 
                     <div class="stats-grid">
-                        <div class="stat-item">
+                        <div class="stat-item clickable" id="arrivalsPanel" data-type="arrivals">
                             <div class="stat-label">Non-EU Arrivals</div>
                             <div id="arrivals" class="stat-value">-</div>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item clickable" id="departuresPanel" data-type="departures">
                             <div class="stat-label">Non-EU Departures</div>
                             <div id="departures" class="stat-value">-</div>
                         </div>
@@ -103,6 +103,23 @@
                 <div class="flights-card">
                     <h3 class="flights-title">Peak Hour Flights</h3>
                     <div id="flightsList" class="flights-list"></div>
+                </div>
+
+                <div id="timetableCard" class="timetable-card hidden">
+                    <div class="timetable-header">
+                        <h3 class="timetable-title" id="timetableTitle">Flight Timetable</h3>
+                        <button class="timetable-close" id="closeTimetable" aria-label="Close timetable">×</button>
+                    </div>
+                    
+                    <div class="timetable-tabs">
+                        <button class="timetable-tab active" data-tab="all">All Flights</button>
+                        <button class="timetable-tab" data-tab="arrivals">Arrivals</button>
+                        <button class="timetable-tab" data-tab="departures">Departures</button>
+                    </div>
+                    
+                    <div class="timetable-content" id="timetableContent">
+                        <!-- Table will be inserted here -->
+                    </div>
                 </div>
 
                 <div class="info-card">

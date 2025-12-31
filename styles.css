@@ -315,11 +315,35 @@ body {
     padding: 1.5rem;
     background: var(--color-off-white);
     border-radius: 12px;
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
 }
 
 .stat-item:hover {
     transform: translateY(-4px);
+    background: var(--color-white);
+    border-color: var(--color-ocean-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-item.clickable {
+    position: relative;
+}
+
+.stat-item.clickable::after {
+    content: '→';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: var(--color-ocean);
+    font-weight: bold;
+}
+
+.stat-item.clickable:hover::after {
+    opacity: 1;
 }
 
 .stat-label {
@@ -433,6 +457,156 @@ body {
 .flight-type.departure {
     background: var(--color-cork);
     color: white;
+}
+
+/* Info Card */
+.timetable-card {
+    background: var(--color-white);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 2rem;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s backwards;
+}
+
+.timetable-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.timetable-title {
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.75rem;
+    color: var(--color-ocean);
+}
+
+.timetable-close {
+    background: var(--color-light-gray);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: var(--color-dark);
+    transition: all 0.3s ease;
+}
+
+.timetable-close:hover {
+    background: var(--color-terracotta);
+    color: var(--color-white);
+    transform: rotate(90deg);
+}
+
+.timetable-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--color-light-gray);
+}
+
+.timetable-tab {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-gray);
+    transition: all 0.3s ease;
+    font-family: 'Manrope', sans-serif;
+}
+
+.timetable-tab:hover {
+    color: var(--color-ocean);
+}
+
+.timetable-tab.active {
+    color: var(--color-ocean);
+    border-bottom-color: var(--color-ocean);
+}
+
+.timetable-content {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.timetable-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.timetable-table thead {
+    position: sticky;
+    top: 0;
+    background: var(--color-off-white);
+    z-index: 1;
+}
+
+.timetable-table th {
+    text-align: left;
+    padding: 1rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-cork);
+    border-bottom: 2px solid var(--color-light-gray);
+    font-weight: 600;
+}
+
+.timetable-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-light-gray);
+    color: var(--color-dark);
+}
+
+.timetable-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.timetable-table tbody tr:hover {
+    background: var(--color-off-white);
+}
+
+.flight-time-cell {
+    font-weight: 700;
+    color: var(--color-ocean);
+    font-size: 1.1rem;
+}
+
+.flight-number-cell {
+    font-weight: 600;
+}
+
+.flight-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.flight-badge.arrival {
+    background: var(--color-ocean-light);
+    color: white;
+}
+
+.flight-badge.departure {
+    background: var(--color-cork);
+    color: white;
+}
+
+.empty-timetable {
+    text-align: center;
+    padding: 3rem;
+    color: var(--color-gray);
 }
 
 /* Info Card */
@@ -574,6 +748,7 @@ body {
     .crowd-card,
     .chart-card,
     .flights-card,
+    .timetable-card,
     .info-card {
         padding: 1.5rem;
     }
@@ -584,5 +759,30 @@ body {
     
     .chart-container {
         height: 220px;
+    }
+    
+    .timetable-table {
+        font-size: 0.85rem;
+    }
+    
+    .timetable-table th,
+    .timetable-table td {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .timetable-tabs {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .timetable-tab {
+        padding: 0.5rem 1rem;
+        border-bottom: none;
+        border-left: 3px solid transparent;
+    }
+    
+    .timetable-tab.active {
+        border-left-color: var(--color-ocean);
+        background: var(--color-off-white);
     }
 }
