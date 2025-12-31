@@ -271,6 +271,11 @@ body {
     color: white;
 }
 
+.crowd-badge.no-data {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
 /* Crowd Meter */
 .crowd-visual {
     margin-bottom: 2.5rem;

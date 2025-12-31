@@ -11,10 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateInput = document.getElementById('date');
     const predictBtn = document.getElementById('predictBtn');
 
-    // Set min date to today and max to 3 days from now (FlightAware free tier limit)
+    // Set min date to today and max to 2 days from now (FlightAware API limit)
+    // According to FlightAware docs: "must be no further than 10 days in the past and 2 days in the future"
     const today = new Date();
     const maxDate = new Date();
-    maxDate.setDate(today.getDate() + 3);
+    maxDate.setDate(today.getDate() + 2);
     
     dateInput.min = today.toISOString().split('T')[0];
     dateInput.max = maxDate.toISOString().split('T')[0];
@@ -45,12 +46,14 @@ async function fetchAndDisplayPrediction(airport, date) {
     const loading = document.getElementById('loading');
     const results = document.getElementById('results');
     const error = document.getElementById('error');
+    const timetableCard = document.getElementById('timetableCard');
 
     // Show loading state
     resultsSection.classList.remove('hidden');
     loading.classList.remove('hidden');
     results.classList.add('hidden');
     error.classList.add('hidden');
+    timetableCard.classList.add('hidden'); // Hide old timetable from previous search
 
     try {
         // Call the Vercel serverless API
@@ -73,8 +76,8 @@ async function fetchAndDisplayPrediction(airport, date) {
         error.classList.remove('hidden');
         
         // Provide specific error messages
-        if (err.message.includes('Invalid start bound') || err.message.includes('time is too far')) {
-            error.textContent = `⚠️ Date is too far in the future. The free FlightAware API only provides data for the next 2-3 days. Please select today, tomorrow, or the day after.`;
+        if (err.message.includes('Invalid start bound') || err.message.includes('Invalid end bound') || err.message.includes('time is too far')) {
+            error.textContent = `⚠️ Date is too far in the future. FlightAware API only provides flight data for today and the next 2 days. Please select today, tomorrow, or the day after tomorrow.`;
         } else if (err.message.includes('Rate limit')) {
             error.textContent = `⚠️ API rate limit exceeded. Please wait a moment and try again.`;
         } else {
@@ -93,15 +96,21 @@ function displayResults(data) {
     currentFlightData = data;
     
     // Check for warnings or errors in the response
-    if (data.warning || data.apiError) {
+    const hasWarning = !!(data.warning || data.apiError);
+    if (hasWarning) {
         showWarningBanner(data.warning, data.apiError);
     } else {
         hideWarningBanner();
     }
     
     // Update crowd level badge and meter
-    const crowdLevel = calculateCrowdLevel(data.totalFlights);
-    updateCrowdDisplay(crowdLevel, data.totalFlights);
+    // If there's a warning and no flights, show "No Data" state
+    if (hasWarning && data.totalFlights === 0) {
+        updateCrowdDisplayNoData();
+    } else {
+        const crowdLevel = calculateCrowdLevel(data.totalFlights);
+        updateCrowdDisplay(crowdLevel, data.totalFlights);
+    }
 
     // Update statistics
     document.getElementById('arrivals').textContent = data.arrivals.length;
@@ -119,7 +128,7 @@ function displayResults(data) {
     displayFlights(data.peakFlights);
 
     // Display travel tips
-    displayTravelTips(crowdLevel);
+    displayTravelTips(hasWarning && data.totalFlights === 0 ? 'no-data' : calculateCrowdLevel(data.totalFlights));
 }
 
 // Calculate crowd level based on number of flights
@@ -149,6 +158,17 @@ function updateCrowdDisplay(level, totalFlights) {
     bar.style.width = config.width;
 }
 
+// Update crowd display for no-data state
+function updateCrowdDisplayNoData() {
+    const badge = document.getElementById('crowdBadge');
+    const bar = document.getElementById('crowdBar');
+
+    badge.textContent = 'No Data';
+    badge.className = 'crowd-badge no-data';
+    bar.style.background = 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)';
+    bar.style.width = '0%';
+}
+
 // Display flight list
 function displayFlights(flights) {
     const flightsList = document.getElementById('flightsList');
@@ -176,6 +196,12 @@ function displayTravelTips(level) {
     const tipsList = document.getElementById('travelTips');
     
     const tips = {
+        'no-data': [
+            'Unable to retrieve flight data at this time',
+            'This may be due to API rate limits or date availability',
+            'Try again in a few minutes or select a different date',
+            'For current information, check the airport\'s official website'
+        ],
         'low': [
             'Great time to travel! Expect minimal queues',
             'Arrive 90 minutes before departure for international flights',
@@ -589,9 +615,9 @@ function showWarningBanner(warning, apiError) {
         if (apiError.includes('Rate limit') || apiError.includes('429')) {
             warningTitle = 'Rate Limit Reached';
             warningMessage = '⏱️ The FlightAware API rate limit has been exceeded. The data shown may be incomplete or from cache. Please try again in a few minutes, or results may be limited to cached data.';
-        } else if (apiError.includes('Invalid start bound') || apiError.includes('time is too far')) {
+        } else if (apiError.includes('Invalid start bound') || apiError.includes('Invalid end bound') || apiError.includes('time is too far')) {
             warningTitle = 'Date Not Available';
-            warningMessage = '📅 Flight data is only available for today and the next 2-3 days with the free API tier. Please select a closer date.';
+            warningMessage = '📅 Flight data is only available for today and the next 2 days per FlightAware API limitations. Please select today, tomorrow, or the day after tomorrow.';
         } else if (apiError.includes('401') || apiError.includes('Invalid API key')) {
             warningTitle = 'API Configuration Issue';
             warningMessage = '🔑 There is an issue with the API key configuration. Please contact the administrator.';
